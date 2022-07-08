@@ -52,6 +52,12 @@
 #include <uORB/topics/actuator_controls.h>
 #include <uORB/topics/orb_test.h>
 
+enum FAREWELL_MODE {
+	FAREWELL_MODE_IDLE,
+	FAREWELL_MODE_SOARING,
+	FAREWELL_MODE_THERMAL
+};
+
 class ActuatorTestApp : public ModuleBase<ActuatorTestApp>, public ModuleParams, public px4::ScheduledWorkItem
 {
 public:
@@ -113,6 +119,8 @@ private:
 	float _timer_1{0.0f};
 	float _delta_step_1{0.0f};
 	float _u_1{0.0f};
+
+	FAREWELL_MODE _control_mode_current{FAREWELL_MODE_SOARING}; // used to check if the mode has changed
 
 	DEFINE_PARAMETERS(
 		(ParamInt<px4::params::ATA_TRIGGERED>) _param_ata_triggered,

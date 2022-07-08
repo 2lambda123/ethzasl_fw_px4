@@ -135,10 +135,25 @@ void ActuatorTestApp::Run()
 	if (_triggered) {
 
 		_timer_0 += dt;
-		_timer_1 += dt;
 
-		_u_0 = cos(_timer_0);
-		_u_1 = sin(_timer_0);
+		switch (_control_mode_current) {
+		case FAREWELL_MODE_IDLE: {
+				break;
+			}
+
+		case FAREWELL_MODE_SOARING: {
+				_u_0 = cos(_timer_0);
+				_u_1 = sin(0.5f * _timer_0);
+				break;
+			}
+
+		case FAREWELL_MODE_THERMAL: {
+				_u_0 = cos(_timer_0);
+				_u_1 = sin(_timer_0);
+				break;
+			}
+		}
+
 
 	} else {
 
