@@ -51,6 +51,8 @@
 #include <uORB/topics/input_rc.h>
 #include <uORB/topics/actuator_controls.h>
 #include <uORB/topics/orb_test.h>
+#include <uORB/topics/vehicle_air_data.h>
+#include <uORB/topics/adc_report.h>
 
 enum FAREWELL_MODE {
 	FAREWELL_MODE_IDLE,
@@ -82,9 +84,13 @@ private:
 
 	void parameters_update(bool force);
 
+	FAREWELL_MODE setCurrentMode(hrt_abstime time, const FAREWELL_MODE current_mode);
+
 	// messages we listen to
 	uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update)};
 	uORB::Subscription _input_rc_sub{ORB_ID(input_rc)};
+	uORB::Subscription _adc_report_sub{ORB_ID(adc_report)};
+	uORB::Subscription _vehicle_air_data_sub{ORB_ID(vehicle_air_data)};
 
 	// messages we publish to
 	uORB::Publication<actuator_controls_s>	_actuators_0_pub{ORB_ID(actuator_controls_0)};
@@ -93,6 +99,7 @@ private:
 	perf_counter_t	_loop_interval_perf{perf_alloc(PC_INTERVAL, MODULE_NAME": interval")};
 
 	hrt_abstime _last_run{0};
+	hrt_abstime _last_modechange{0};
 
 	// pub-sub message structs
 	actuator_controls_s _actuators_0 {};
@@ -109,6 +116,8 @@ private:
 	float _timer_0{0.0f};
 	float _delta_step_0{0.0f};
 	float _u_0{0.0f};
+	float _previous_baro_pressure{0.0};
+	float _previous_adc_reading{0.0};
 
 	int _step_count_1{0};
 	float _step_duration_1{0.0f};
@@ -120,7 +129,7 @@ private:
 	float _delta_step_1{0.0f};
 	float _u_1{0.0f};
 
-	FAREWELL_MODE _control_mode_current{FAREWELL_MODE_SOARING}; // used to check if the mode has changed
+	FAREWELL_MODE _control_mode_current{FAREWELL_MODE_THERMAL}; // used to check if the mode has changed
 
 	DEFINE_PARAMETERS(
 		(ParamInt<px4::params::ATA_TRIGGERED>) _param_ata_triggered,
