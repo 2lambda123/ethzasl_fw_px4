@@ -15,8 +15,8 @@
 
 set VEHICLE_TYPE actuator_test
 
-param set PWM_MIN 1000
-param set PWM_MAX 2000
+param set PWM_MIN 1250
+param set PWM_MAX 1800
 param set PWM_RATE 50
 param set PWM_DISARMED 1500
 

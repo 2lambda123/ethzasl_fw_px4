@@ -224,6 +224,7 @@ then
 	ekf2 start &
 	airspeed_selector start
 	actuator_test_app start
+	commander arm -f
 
 fi
 
