@@ -117,10 +117,35 @@ ActuatorTestApp::setCurrentMode(hrt_abstime time, const FAREWELL_MODE current_mo
 	// If the model is not in thermal mode, and the shines light into the model, switch to thermal mode
 	FAREWELL_MODE next_mode = current_mode;
 
+	//poll vehicle airdata
+	if (_vehicle_air_data_sub.updated()) {
+		vehicle_air_data_s air_data;
+		_vehicle_air_data_sub.update(&air_data);
+
+		// Initialize buffer to prevent false triggering
+		if (_previous_baro_pressure < 1.0f) { _previous_baro_pressure = air_data.baro_pressure_pa; }
+
+		_baro_diff_abs = abs(air_data.baro_pressure_pa - _previous_baro_pressure);
+		_previous_baro_pressure = air_data.baro_pressure_pa;
+	}
+
+	//poll adc reading
+	if (_adc_report_sub.updated()) {
+		adc_report_s adc_readings;
+		_adc_report_sub.update(&adc_readings);
+		///TODO: Set mode depending on ADC input
+		// PX4_INFO("Reading");
+		float adc_reading = float(adc_readings.raw_data[6]);
+		_adc_reading_diff = adc_reading - _previous_adc_reading;
+		_previous_adc_reading = adc_reading;
+	}
+
+	//Hystersis
 	if ((time - _last_modechange) / 1e6f < 10.0f) {
 		return next_mode;
 	}
 
+	//State transition logic
 	if (current_mode != FAREWELL_MODE_IDLE) {
 		next_mode = FAREWELL_MODE_IDLE;
 		PX4_INFO("TRANSITION TO FAREWELL_MODE_IDLE");
@@ -130,49 +155,21 @@ ActuatorTestApp::setCurrentMode(hrt_abstime time, const FAREWELL_MODE current_mo
 
 	// If the model is not in soaring mode, and the user blows into the model, change mode to soaring mode
 	if (current_mode != FAREWELL_MODE_SOARING) {
-
-		vehicle_air_data_s air_data;
-
-		if (_vehicle_air_data_sub.updated()) {
-			_vehicle_air_data_sub.update(&air_data);
-
-			// Initialize buffer to prevent false triggering
-			if (_previous_baro_pressure < 1.0f) { _previous_baro_pressure = air_data.baro_pressure_pa; }
-
-			float baro_diff_abs = abs(air_data.baro_pressure_pa - _previous_baro_pressure);
-			PX4_INFO("Pressure: %f barodiff: %f)", double(air_data.baro_pressure_pa), double(baro_diff_abs));
-			_previous_baro_pressure = air_data.baro_pressure_pa;
-
-			if (baro_diff_abs > 20.0f) {
-				// User is blowing at the model!
-				///TODO: Add hystersis after action
-				_last_modechange = time;
-				PX4_INFO("TRANSITION TO FAREWELL_MODE_SOARING ( barodiff: %f)", double(baro_diff_abs));
-				next_mode = FAREWELL_MODE_SOARING;
-				return next_mode;
-			}
+		if (_baro_diff_abs > 20.0f) {
+			// User is blowing at the model!
+			_last_modechange = time;
+			PX4_INFO("TRANSITION TO FAREWELL_MODE_SOARING ( barodiff: %f)", double(_baro_diff_abs));
+			next_mode = FAREWELL_MODE_SOARING;
+			return next_mode;
 		}
 	}
 
 	if (current_mode != FAREWELL_MODE_THERMAL) {
-		adc_report_s adc_readings;
-
-		if (_adc_report_sub.updated()) {
-			_adc_report_sub.update(&adc_readings);
-			///TODO: Set mode depending on ADC input
-			// PX4_INFO("Reading");
-			float adc_reading = float(adc_readings.raw_data[5]);
-			float adc_reading_diff = adc_reading - _previous_adc_reading;
-			_previous_adc_reading = adc_reading;
-
-			// PX4_INFO("  ADC Reading channel %d: %f", adc_readings.channel_id[5], double(adc_reading));
-			if (adc_reading_diff > 500.0f) {
-				PX4_INFO("TRANSITION TO FAREWELL_MODE_THERMAL ( adc diff: %f )", double(adc_reading_diff));
-				_last_modechange = time;
-				next_mode = FAREWELL_MODE_THERMAL;
-				_previous_adc_reading = adc_reading;
-				return next_mode;
-			}
+		// PX4_INFO("  ADC Reading channel %d: %f", adc_readings.channel_id[5], double(adc_reading));
+		if (abs(_previous_adc_reading) > 850.0f) {
+			_last_modechange = time;
+			next_mode = FAREWELL_MODE_THERMAL;
+			return next_mode;
 		}
 	}
 

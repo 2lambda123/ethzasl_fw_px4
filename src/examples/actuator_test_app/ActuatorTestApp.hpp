@@ -117,7 +117,9 @@ private:
 	float _delta_step_0{0.0f};
 	float _u_0{0.0f};
 	float _previous_baro_pressure{0.0};
+	float _baro_diff_abs{0.0};
 	float _previous_adc_reading{0.0};
+	float _adc_reading_diff{0.0};
 
 	int _step_count_1{0};
 	float _step_duration_1{0.0f};
