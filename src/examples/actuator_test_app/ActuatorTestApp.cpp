@@ -137,23 +137,8 @@ void ActuatorTestApp::Run()
 		_timer_0 += dt;
 		_timer_1 += dt;
 
-		if (_timer_0 > (_step_count_0 + 1)*_step_duration_0) {
-			_timer_0 = 0.0f;
-		}
-
-		if (_timer_1 > (_step_count_1 + 1)*_step_duration_1) {
-			_timer_1 = 0.0f;
-		}
-
-		if (_enable_0) {
-			int n_0 = _timer_0 / _step_duration_0;
-			_u_0 = fminf(_step_min_0 + n_0 * _delta_step_0, _step_max_0);
-		}
-
-		if (_enable_1) {
-			int n_1 = _timer_1 / _step_duration_1;
-			_u_1 =  fminf(_step_min_1 + n_1 * _delta_step_1, _step_max_1);
-		}
+		_u_0 = cos(_timer_0);
+		_u_1 = sin(_timer_0);
 
 	} else {
 
@@ -169,7 +154,7 @@ void ActuatorTestApp::Run()
 
 	// control stuff via RC inputs
 	if (!_input_rc.rc_lost) {
-		_actuators_0.control[2] = (_input_rc.values[0] - 1500.0f) / 500.0f;	
+		_actuators_0.control[2] = (_input_rc.values[0] - 1500.0f) / 500.0f;
 	}
 
 	// publish actuator commands
