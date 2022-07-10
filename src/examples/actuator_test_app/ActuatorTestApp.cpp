@@ -213,7 +213,7 @@ void ActuatorTestApp::Run()
 
 		case FAREWELL_MODE_SOARING: {
 				_u_0 = cos(_timer_0);
-				_u_1 = sin(0.5f * _timer_0);
+				_u_1 = sin(2.0f * _timer_0);
 				break;
 			}
 
