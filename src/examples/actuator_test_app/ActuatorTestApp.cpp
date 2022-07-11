@@ -34,6 +34,7 @@
 #include "ActuatorTestApp.hpp"
 
 #include <drivers/drv_hrt.h>
+#include <matrix/math.hpp>
 
 using namespace time_literals;
 
@@ -133,16 +134,26 @@ ActuatorTestApp::setCurrentMode(hrt_abstime time, const FAREWELL_MODE current_mo
 	if (_adc_report_sub.updated()) {
 		adc_report_s adc_readings;
 		_adc_report_sub.update(&adc_readings);
-		///TODO: Set mode depending on ADC input
-		// PX4_INFO("Reading");
+		float beta_0 = 0.002;
+		float beta_1 = 0.2;
 		float adc_reading = float(adc_readings.raw_data[6]);
-		_adc_reading_diff = adc_reading - _previous_adc_reading;
-		_previous_adc_reading = adc_reading;
+
+		if (abs(_previous_adc_reading_0) < FLT_EPSILON) {
+			_previous_adc_reading_0 = adc_reading;
+			_previous_adc_reading_1 = adc_reading;
+		}
+
+		_previous_adc_reading_0 = _previous_adc_reading_0 + beta_0 * (adc_reading - _previous_adc_reading_0);
+		_previous_adc_reading_1 = _previous_adc_reading_1 + beta_1 * (adc_reading - _previous_adc_reading_1);
 	}
 
+	// PX4_INFO("ADC diff %f", double(_previous_adc_reading_1 - _previous_adc_reading_0));
+
 	//Hystersis
-	if ((time - _last_modechange) / 1e6f < 10.0f) {
-		return next_mode;
+	if (current_mode != FAREWELL_MODE_IDLE) {
+		if ((time - _last_modechange) / 1e6f < 10.0f) {
+			return next_mode;
+		}
 	}
 
 	//State transition logic
@@ -166,7 +177,7 @@ ActuatorTestApp::setCurrentMode(hrt_abstime time, const FAREWELL_MODE current_mo
 
 	if (current_mode != FAREWELL_MODE_THERMAL) {
 		// PX4_INFO("  ADC Reading channel %d: %f", adc_readings.channel_id[5], double(adc_reading));
-		if (abs(_previous_adc_reading) > 850.0f) {
+		if ((_previous_adc_reading_1 - _previous_adc_reading_0) > 50.0f) {
 			_last_modechange = time;
 			next_mode = FAREWELL_MODE_THERMAL;
 			return next_mode;
@@ -204,25 +215,31 @@ void ActuatorTestApp::Run()
 
 		_control_mode_current = setCurrentMode(now, _control_mode_current);
 
+		float reference_0{0.0};
+		float reference_1{0.0};
+
 		switch (_control_mode_current) {
 		case FAREWELL_MODE_IDLE: {
-				_u_0 = 0.5 * cos(_timer_0);
-				_u_1 = 0.5 * sin(_timer_0);
+				reference_0 = cos(_timer_0);
+				reference_1 = sin(2.0f * _timer_0);
 				break;
 			}
 
 		case FAREWELL_MODE_SOARING: {
-				_u_0 = cos(_timer_0);
-				_u_1 = sin(2.0f * _timer_0);
+				reference_0 = cos(_timer_0);
+				reference_1 = sin(_timer_0);
 				break;
 			}
 
 		case FAREWELL_MODE_THERMAL: {
-				_u_0 = cos(_timer_0);
-				_u_1 = sin(_timer_0);
+				reference_0 = 0.4 * cos(_timer_0) + 0.6;
+				reference_1 = 0.4 * sin(_timer_0) + 0.1;
 				break;
 			}
 		}
+
+		_u_0 = math::min(math::max(reference_0 - _u_0, -0.01f), 0.01f) + _u_0;
+		_u_1 = math::min(math::max(reference_1 - _u_1, -0.01f), 0.01f) + _u_1;
 
 		//Limit testing
 		// _u_0 = matrix::sign(cos(_timer_0));
@@ -239,6 +256,7 @@ void ActuatorTestApp::Run()
 
 	_actuators_0.control[0] = math::constrain(_u_0, -1.0f, 1.0f);
 	_actuators_0.control[1] = math::constrain(_u_1, -1.0f, 1.0f);
+	PX4_INFO("Actutator 0: %f, Actuator 1: %f", double(_u_0), double(_u_1));
 
 	// control stuff via RC inputs
 	if (!_input_rc.rc_lost) {

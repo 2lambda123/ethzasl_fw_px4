@@ -52,6 +52,7 @@
 #include <uORB/topics/actuator_controls.h>
 #include <uORB/topics/orb_test.h>
 #include <uORB/topics/vehicle_air_data.h>
+#include <uORB/topics/differential_pressure.h>
 #include <uORB/topics/adc_report.h>
 
 enum FAREWELL_MODE {
@@ -91,6 +92,7 @@ private:
 	uORB::Subscription _input_rc_sub{ORB_ID(input_rc)};
 	uORB::Subscription _adc_report_sub{ORB_ID(adc_report)};
 	uORB::Subscription _vehicle_air_data_sub{ORB_ID(vehicle_air_data)};
+	uORB::Subscription _differential_pressure_sub{ORB_ID(differential_pressure)};
 
 	// messages we publish to
 	uORB::Publication<actuator_controls_s>	_actuators_0_pub{ORB_ID(actuator_controls_0)};
@@ -118,8 +120,8 @@ private:
 	float _u_0{0.0f};
 	float _previous_baro_pressure{0.0};
 	float _baro_diff_abs{0.0};
-	float _previous_adc_reading{0.0};
-	float _adc_reading_diff{0.0};
+	float _previous_adc_reading_0{0.0};
+	float _previous_adc_reading_1{0.0};
 
 	int _step_count_1{0};
 	float _step_duration_1{0.0f};
@@ -131,7 +133,7 @@ private:
 	float _delta_step_1{0.0f};
 	float _u_1{0.0f};
 
-	FAREWELL_MODE _control_mode_current{FAREWELL_MODE_THERMAL}; // used to check if the mode has changed
+	FAREWELL_MODE _control_mode_current{FAREWELL_MODE_IDLE}; // used to check if the mode has changed
 
 	DEFINE_PARAMETERS(
 		(ParamInt<px4::params::ATA_TRIGGERED>) _param_ata_triggered,
