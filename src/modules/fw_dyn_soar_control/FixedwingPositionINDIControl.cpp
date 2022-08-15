@@ -706,9 +706,20 @@ FixedwingPositionINDIControl::Run()
 
 	perf_begin(_loop_perf);
 
+	// =================================
+	// publish offboard control commands
+	// =================================
+	offboard_control_mode_s ocm{};
+	ocm.actuator = true;
+	hrt_abstime now = hrt_absolute_time();
+	ocm.timestamp = now;
+	_offboard_control_mode_pub.publish(ocm);
+
 	// only run controller if pos, vel, acc changed
 	if (_vehicle_angular_velocity_sub.update(&_angular_vel)) {
 		// only update parameters if they changed
+		// PX4_INFO("Angular velocity updated");
+
 		bool params_updated = _parameter_update_sub.updated();
 
 		// check for parameter updates
@@ -787,9 +798,9 @@ FixedwingPositionINDIControl::Run()
 
 
 		// only run actuators poll, when our module is not publishing:
-		if (!_control_mode.flag_control_offboard_enabled) {
-			actuator_controls_poll();
-		}
+		// if (!_control_mode.flag_control_offboard_enabled) {
+		// 	actuator_controls_poll();
+		// }
 
 		// ============================
 		// compute reference kinematics
@@ -821,14 +832,6 @@ FixedwingPositionINDIControl::Run()
 		// compute actuator deflections
 		// ============================
 		Vector3f ctrl2 = _compute_actuator_deflections(ctrl1);
-
-		// =================================
-		// publish offboard control commands
-		// =================================
-		offboard_control_mode_s ocm{};
-		ocm.actuator = true;
-		ocm.timestamp = hrt_absolute_time();
-		_offboard_control_mode_pub.publish(ocm);
 
 		// Publish actuator controls only once in OFFBOARD
 		if (_control_mode.flag_control_offboard_enabled) {
@@ -899,8 +902,9 @@ FixedwingPositionINDIControl::Run()
 			// publish acutator controls
 			// =========================
 			//_actuators = {};
-			_actuators.timestamp = hrt_absolute_time();
-			_actuators.timestamp_sample = hrt_absolute_time();
+			// PX4_INFO("Publish actuators");
+			_actuators.timestamp = now;
+			_actuators.timestamp_sample = now;
 			_actuators.control[actuator_controls_s::INDEX_ROLL] = ctrl2(0);
 			_actuators.control[actuator_controls_s::INDEX_PITCH] = ctrl2(1);
 			_actuators.control[actuator_controls_s::INDEX_YAW] = ctrl2(2);
@@ -922,7 +926,6 @@ FixedwingPositionINDIControl::Run()
 			_soaring_controller_wind.position[0] = _pos(0);
 			_soaring_controller_wind.position[1] = _pos(1);
 			_soaring_controller_wind.position[2] = _pos(2);
-			_soaring_controller_wind_pub.publish(_soaring_controller_wind);
 
 
 
@@ -965,7 +968,6 @@ FixedwingPositionINDIControl::Run()
 
 		perf_end(_loop_perf);
 	}
-
 }
 
 Vector<float, FixedwingPositionINDIControl::_num_basis_funs>
