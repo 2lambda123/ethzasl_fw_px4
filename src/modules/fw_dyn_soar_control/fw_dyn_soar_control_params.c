@@ -12,9 +12,9 @@
 
 /**
  * inertia around body x-axis
- * 
+ *
  * This is the inertia of the aircraft, used for the INDI
- * 
+ *
  * @unit kg
  * @min 0.01
  * @max 10
@@ -26,9 +26,9 @@ PARAM_DEFINE_FLOAT(DS_INERTIA_ROLL, 0.197563f);
 
 /**
  * inertia around body y-axis
- * 
+ *
  * This is the inertia of the aircraft, used for the INDI
- * 
+ *
  * @unit kg
  * @min 0.01
  * @max 10
@@ -40,9 +40,9 @@ PARAM_DEFINE_FLOAT(DS_INERTIA_PITCH, 0.1458929f);
 
 /**
  * inertia around body z-axis
- * 
+ *
  * This is the inertia of the aircraft, used for the INDI
- * 
+ *
  * @unit kg
  * @min 0.01
  * @max 10
@@ -54,9 +54,9 @@ PARAM_DEFINE_FLOAT(DS_INERTIA_YAW, 0.1477f);
 
 /**
  * inertia tensor term in body xz-axis (roll-yaw coupling)
- * 
+ *
  * This is the inertia of the aircraft, used for the INDI
- * 
+ *
  * @unit kg
  * @min -0.5
  * @max 0
@@ -68,9 +68,9 @@ PARAM_DEFINE_FLOAT(DS_INERTIA_RP, -0.0f);
 
 /**
  * total takeoff mass
- * 
+ *
  * This is the mass of the aircraft, used for the INDI
- * 
+ *
  * @unit kg
  * @min 1.0
  * @max 2.0
@@ -82,7 +82,7 @@ PARAM_DEFINE_FLOAT(DS_MASS, 1.4f);
 
 /**
  * total wing area used for lift and drag computation
- * 
+ *
  * @unit m^2
  * @min 0.1
  * @max 1.0
@@ -95,8 +95,8 @@ PARAM_DEFINE_FLOAT(DS_WING_AREA, 0.4f);
 
 /**
  * air density used for lift and drag computation
- * 
- * @unit 
+ *
+ * @unit
  * @min 0.5
  * @max 1.225
  * @decimal 3
@@ -107,11 +107,11 @@ PARAM_DEFINE_FLOAT(DS_RHO, 1.223f);
 
 /**
  * estimated lift coefficients used for lift and drag computation
- * 
+ *
  * Used as L = C_l0 + C_l1*alpha,
  * where alpha is the angle of attack.
- * 
- * @unit 
+ *
+ * @unit
  * @min -100
  * @max 100
  * @decimal 3
@@ -122,11 +122,11 @@ PARAM_DEFINE_FLOAT(DS_C_L0, 0.356f);
 
 /**
  * estimated lift coefficients used for lift and drag computation
- * 
+ *
  * Used as L = C_l0 + C_l1*alpha,
  * where alpha is the angle of attack.
- * 
- * @unit 
+ *
+ * @unit
  * @min -100
  * @max 100
  * @decimal 3
@@ -138,11 +138,11 @@ PARAM_DEFINE_FLOAT(DS_C_L1, 2.354f);
 
 /**
  * estimated drag coefficients used for lift and drag computation
- * 
+ *
  * Used as D = C_d0 + C_d1*alpha + C_d2*alpha**2,
  * where alpha is the angle of attack.
- * 
- * @unit 
+ *
+ * @unit
  * @min -100
  * @max 100
  * @decimal 4
@@ -153,11 +153,11 @@ PARAM_DEFINE_FLOAT(DS_C_D0, 0.0288f);
 
 /**
  * estimated drag coefficients used for lift and drag computation
- * 
+ *
  * Used as D = C_d0 + C_d1*alpha + C_d2*alpha**2,
  * where alpha is the angle of attack.
- * 
- * @unit 
+ *
+ * @unit
  * @min -100
  * @max 100
  * @decimal 4
@@ -168,11 +168,11 @@ PARAM_DEFINE_FLOAT(DS_C_D1, 0.3783f);
 
 /**
  * estimated drag coefficients used for lift and drag computation
- * 
+ *
  * Used as D = C_d0 + C_d1*alpha + C_d2*alpha**2,
  * where alpha is the angle of attack.
- * 
- * @unit 
+ *
+ * @unit
  * @min -100
  * @max 100
  * @decimal 4
@@ -183,9 +183,9 @@ PARAM_DEFINE_FLOAT(DS_C_D2, 1.984f);
 
 /**
  * offset angle between body frame (Pixhawk) and the wing chord
- * 
+ *
  * Used to compute the AoA
- * 
+ *
  * @unit rad
  * @min 0
  * @max 0.1
@@ -197,7 +197,7 @@ PARAM_DEFINE_FLOAT(DS_AOA_OFFSET, 0.07f);
 
 /**
  * stall speed of the aircraft
- * 
+ *
  * @unit m/s
  * @min 5
  * @max 10
@@ -213,8 +213,8 @@ PARAM_DEFINE_FLOAT(DS_STALL_SPEED, 9.0f);
 // ========================================================
 /**
  * control gain of position PD-controller (body x-direction)
- * 
- * @unit 
+ *
+ * @unit
  * @min 0
  * @max 100
  * @decimal 1
@@ -225,8 +225,8 @@ PARAM_DEFINE_FLOAT(DS_LIN_K_X, 1.0f);
 
 /**
  * control gain of position PD-controller (body y-direction)
- * 
- * @unit 
+ *
+ * @unit
  * @min 0
  * @max 100
  * @decimal 1
@@ -237,8 +237,8 @@ PARAM_DEFINE_FLOAT(DS_LIN_K_Y, 1.0f);
 
 /**
  * control gain of position PD-controller (body z-direction)
- * 
- * @unit 
+ *
+ * @unit
  * @min 0
  * @max 100
  * @decimal 1
@@ -249,8 +249,8 @@ PARAM_DEFINE_FLOAT(DS_LIN_K_Z, 1.0f);
 
 /**
  * normalized damping coefficient of position PD-controller (body x-direction)
- * 
- * @unit 
+ *
+ * @unit
  * @min 0
  * @max 2
  * @decimal 2
@@ -261,8 +261,8 @@ PARAM_DEFINE_FLOAT(DS_LIN_C_X, 1.0f);
 
 /**
  * normalized damping coefficient of position PD-controller (body y-direction)
- * 
- * @unit 
+ *
+ * @unit
  * @min 0
  * @max 2
  * @decimal 2
@@ -273,8 +273,8 @@ PARAM_DEFINE_FLOAT(DS_LIN_C_Y, 1.0f);
 
 /**
  * normalized damping coefficient of position PD-controller (body z-direction)
- * 
-* @unit 
+ *
+* @unit
  * @min 0
  * @max 2
  * @decimal 2
@@ -285,8 +285,8 @@ PARAM_DEFINE_FLOAT(DS_LIN_C_Z, 1.0f);
 
 /**
  * acceleration feedback gain of position PD-controller (body x-direction)
- * 
- * @unit 
+ *
+ * @unit
  * @min 0
  * @max 10
  * @decimal 1
@@ -297,8 +297,8 @@ PARAM_DEFINE_FLOAT(DS_LIN_FF_X, 0.5f);
 
 /**
  * acceleration feedback gain of position PD-controller (body y-direction)
- * 
- * @unit 
+ *
+ * @unit
  * @min 0
  * @max 10
  * @decimal 1
@@ -309,8 +309,8 @@ PARAM_DEFINE_FLOAT(DS_LIN_FF_Y, 0.5f);
 
 /**
  * acceleration feedback gain of position PD-controller (body z-direction)
- * 
- * @unit 
+ *
+ * @unit
  * @min 0
  * @max 10
  * @decimal 1
@@ -321,8 +321,8 @@ PARAM_DEFINE_FLOAT(DS_LIN_FF_Z, 0.5f);
 
 /**
  * control gain of attitude PD-controller (body roll-direction)
- * 
- * @unit 
+ *
+ * @unit
  * @min 0
  * @max 100
  * @decimal 1
@@ -333,8 +333,8 @@ PARAM_DEFINE_FLOAT(DS_ROT_K_ROLL, 10.0f);
 
 /**
  * control gain of attitude PD-controller (body pitch-direction)
- * 
- * @unit 
+ *
+ * @unit
  * @min 0
  * @max 100
  * @decimal 1
@@ -345,8 +345,8 @@ PARAM_DEFINE_FLOAT(DS_ROT_K_PITCH, 10.0f);
 
 /**
  * rudder turn coordination FF-gain
- * 
- * @unit 
+ *
+ * @unit
  * @min 0
  * @max 100
  * @decimal 1
@@ -357,8 +357,8 @@ PARAM_DEFINE_FLOAT(DS_ROT_FF_YAW, 1.0f);
 
 /**
  * normalized damping coefficient of attitude PD-controller (body roll-direction)
- * 
- * @unit 
+ *
+ * @unit
  * @min 0
  * @max 2
  * @decimal 2
@@ -369,8 +369,8 @@ PARAM_DEFINE_FLOAT(DS_ROT_C_ROLL, 1.0f);
 
 /**
  * normalized damping coefficient of attitude PD-controller (body pitch-direction)
- * 
- * @unit 
+ *
+ * @unit
  * @min 0
  * @max 2
  * @decimal 2
@@ -381,8 +381,8 @@ PARAM_DEFINE_FLOAT(DS_ROT_C_PITCH, 1.0f);
 
 /**
  * rudder turn coordination P-gain
- * 
- * @unit 
+ *
+ * @unit
  * @min 0
  * @max 100
  * @decimal 2
@@ -398,8 +398,8 @@ PARAM_DEFINE_FLOAT(DS_ROT_P_YAW, 1.0f);
 
 /**
  * roll gain of K_ACT (actuator deflection gain)
- * 
- * @unit 
+ *
+ * @unit
  * @min 0
  * @max 100
  * @decimal 3
@@ -410,8 +410,8 @@ PARAM_DEFINE_FLOAT(DS_K_ACT_ROLL, 0.25f);
 
 /**
  * pitch gain of K_ACT (actuator deflection gain)
- * 
- * @unit 
+ *
+ * @unit
  * @min 0
  * @max 100
  * @decimal 2
@@ -423,8 +423,8 @@ PARAM_DEFINE_FLOAT(DS_K_ACT_PITCH, 0.05f);
 
 /**
  * roll gain of K_ACT_DAMPING (actuator damping gain)
- * 
- * @unit 
+ *
+ * @unit
  * @min 0
  * @max 100
  * @decimal 3
@@ -435,8 +435,8 @@ PARAM_DEFINE_FLOAT(DS_K_DAMP_ROLL, 0.04f);
 
 /**
  * pitch gain of K_ACT_DAMPING (actuator damping gain)
- * 
- * @unit 
+ *
+ * @unit
  * @min 0
  * @max 100
  * @decimal 3
@@ -452,8 +452,8 @@ PARAM_DEFINE_FLOAT(DS_K_DAMP_PITCH, 0.02f);
 
 /**
  * latitude of trajectory start point (WGS84)
- * 
- * @unit 
+ *
+ * @unit
  * @min -90
  * @max 90
  * @decimal 7
@@ -464,8 +464,8 @@ PARAM_DEFINE_FLOAT(DS_ORIGIN_LAT, 47.3130000f);
 
 /**
  * longitude of trajectory start point (WGS84)
- * 
- * @unit 
+ *
+ * @unit
  * @min -180
  * @max 180
  * @decimal 7
@@ -476,8 +476,8 @@ PARAM_DEFINE_FLOAT(DS_ORIGIN_LON, 8.8100000f);
 
 /**
  * altitude of trajectory start point (WGS84)
- * 
- * @unit 
+ *
+ * @unit
  * @min 0
  * @max 2000
  * @decimal 1
@@ -492,8 +492,8 @@ PARAM_DEFINE_FLOAT(DS_ORIGIN_ALT, 537.0f);
 
 /**
  * integer in {0,1,2,3,4,5} defining the loiter trajectory
- * 
- * @unit 
+ *
+ * @unit
  * @min 0
  * @max 7
  * @decimal 1
@@ -507,8 +507,8 @@ PARAM_DEFINE_INT32(DS_LOITER, 0);
 // ==============================================
 /**
  * float in [0,1] corresponding to the engine thrust
- * 
- * @unit 
+ *
+ * @unit
  * @min 0
  * @max 1
  * @decimal 1
@@ -523,8 +523,8 @@ PARAM_DEFINE_FLOAT(DS_THRUST, 0);
 
 /**
  * integer in {0,1} defining if manual attitude setpoints are commanded by the pilot, 0=DS-controller, 1=manual feedthrough
- * 
- * @unit 
+ *
+ * @unit
  * @min 0
  * @max 1
  * @decimal 1
@@ -539,8 +539,8 @@ PARAM_DEFINE_INT32(DS_SWITCH_MANUAL, 0);
 
 /**
  * integer in {0,1} defining if the commanded force has an upper bound (saturates), 0=no saturation, 1=saturation
- * 
- * @unit 
+ *
+ * @unit
  * @min 0
  * @max 1
  * @decimal 1
@@ -555,7 +555,7 @@ PARAM_DEFINE_INT32(DS_SWITCH_SAT, 1);
 
 /**
  * integer in {0,1} defining if the rotation acceleration command will get filtered before performing INDI
- * @unit 
+ * @unit
  * @min 0
  * @max 1
  * @decimal 1

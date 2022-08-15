@@ -47,7 +47,7 @@ using matrix::wrap_pi;
 FixedwingShearEstimator::FixedwingShearEstimator() :
 	ModuleParams(nullptr),
 	WorkItem(MODULE_NAME, px4::wq_configurations::test1),
-    _soaring_estimator_shear_pub(ORB_ID(soaring_estimator_shear)),
+	_soaring_estimator_shear_pub(ORB_ID(soaring_estimator_shear)),
 	_loop_perf(perf_alloc(PC_ELAPSED, MODULE_NAME": cycle"))
 {
 	// limit to 10 Hz
@@ -69,43 +69,48 @@ FixedwingShearEstimator::init()
 		PX4_ERR("vehicle position callback registration failed!");
 		return false;
 	}
-    PX4_INFO("Starting FW_DYN_SOAR_ESTIMATOR");
 
-    parameters_update();
+	PX4_INFO("Starting FW_DYN_SOAR_ESTIMATOR");
 
-    // init horizontal wind field
-    for (uint i=0; i<6; i++){
-        _X_prior_horizontal(i) = 0.f;
-        _X_posterior_horizontal(i) = 0.f;
-        for (uint j=0; j<6; j++){
-            _A_horizontal(i,j) = 0.f;
-        }
-    }
-    _P_prior_horizontal = _Q_horizontal;
-    _P_posterior_horizontal = _Q_horizontal;
+	parameters_update();
 
-    // init vertical wind field
-    for (uint i=0; i<_dim_vertical; i++){
-        _X_prior_vertical(i) = 0.f;
-        _X_posterior_vertical(i) = 0.f;
-        for (uint j=0; j<_dim_vertical; j++){
-            _A_vertical(i,j) = 0.f;
-        }
-    }
-    _P_prior_vertical = _Q_vertical;
-    _P_posterior_vertical = _Q_vertical;
+	// init horizontal wind field
+	for (uint i = 0; i < 6; i++) {
+		_X_prior_horizontal(i) = 0.f;
+		_X_posterior_horizontal(i) = 0.f;
 
-    //
-    _X_prior_horizontal(4) = _init_height;
-    _X_posterior_horizontal(4) = _init_height;
+		for (uint j = 0; j < 6; j++) {
+			_A_horizontal(i, j) = 0.f;
+		}
+	}
 
-    // init time
-    _last_run = hrt_absolute_time();
+	_P_prior_horizontal = _Q_horizontal;
+	_P_posterior_horizontal = _Q_horizontal;
 
-    // init reset counter
-    _reset_counter = 0;
+	// init vertical wind field
+	for (uint i = 0; i < _dim_vertical; i++) {
+		_X_prior_vertical(i) = 0.f;
+		_X_posterior_vertical(i) = 0.f;
 
-    return true;
+		for (uint j = 0; j < _dim_vertical; j++) {
+			_A_vertical(i, j) = 0.f;
+		}
+	}
+
+	_P_prior_vertical = _Q_vertical;
+	_P_posterior_vertical = _Q_vertical;
+
+	//
+	_X_prior_horizontal(4) = _init_height;
+	_X_posterior_horizontal(4) = _init_height;
+
+	// init time
+	_last_run = hrt_absolute_time();
+
+	// init reset counter
+	_reset_counter = 0;
+
+	return true;
 }
 
 int
@@ -114,23 +119,23 @@ FixedwingShearEstimator::parameters_update()
 	updateParams();
 
 	// update params...
-    _Q_horizontal(0,0) = powf(_param_sigma_q_vel.get(),2);
-    _Q_horizontal(1,1) = powf(_param_sigma_q_vel.get(),2);
-    _Q_horizontal(2,2) = powf(_param_sigma_q_vel.get(),2);
-    _Q_horizontal(3,3) = powf(_param_sigma_q_vel.get(),2);
-    _Q_horizontal(4,4) = powf(_param_sigma_q_h.get(),2);
-    _Q_horizontal(5,5) = powf(_param_sigma_q_a.get(),2);
+	_Q_horizontal(0, 0) = powf(_param_sigma_q_vel.get(), 2);
+	_Q_horizontal(1, 1) = powf(_param_sigma_q_vel.get(), 2);
+	_Q_horizontal(2, 2) = powf(_param_sigma_q_vel.get(), 2);
+	_Q_horizontal(3, 3) = powf(_param_sigma_q_vel.get(), 2);
+	_Q_horizontal(4, 4) = powf(_param_sigma_q_h.get(), 2);
+	_Q_horizontal(5, 5) = powf(_param_sigma_q_a.get(), 2);
 
-    _R_horizontal(0,0) = powf(_param_sigma_r_vel.get(),2);
-    _R_horizontal(1,1) = powf(_param_sigma_r_vel.get(),2);
+	_R_horizontal(0, 0) = powf(_param_sigma_r_vel.get(), 2);
+	_R_horizontal(1, 1) = powf(_param_sigma_r_vel.get(), 2);
 
-    for (int i=0;i<(int)_dim_vertical;i++){
-        _Q_vertical(i,i) = powf(_param_sigma_q_vel.get(),2);
-    }
+	for (int i = 0; i < (int)_dim_vertical; i++) {
+		_Q_vertical(i, i) = powf(_param_sigma_q_vel.get(), 2);
+	}
 
-    _R_vertical(0,0) = powf(_param_sigma_r_vel.get(),2);
+	_R_vertical(0, 0) = powf(_param_sigma_r_vel.get(), 2);
 
-    _init_height = _param_init_h.get();
+	_init_height = _param_init_h.get();
 
 	return PX4_OK;
 }
@@ -138,161 +143,164 @@ FixedwingShearEstimator::parameters_update()
 void
 FixedwingShearEstimator::reset_filter()
 {
-    // reset all states of the filter to some initial guess.
+	// reset all states of the filter to some initial guess.
 
-    // reset horizontal wind state
-    for (uint i=0;i<6;i++){
-        _X_prior_horizontal(i) = 0.0f;
-        _X_posterior_horizontal(i) = 0.0f;
-        _P_prior_horizontal(i,i) = 1.0f;
-        _P_posterior_horizontal(i,i) = 1.0f;
-    }
+	// reset horizontal wind state
+	for (uint i = 0; i < 6; i++) {
+		_X_prior_horizontal(i) = 0.0f;
+		_X_posterior_horizontal(i) = 0.0f;
+		_P_prior_horizontal(i, i) = 1.0f;
+		_P_posterior_horizontal(i, i) = 1.0f;
+	}
 
-    // reset vertical wind state
-    for (uint i=0;i<_dim_vertical;i++){
-        _X_prior_vertical(i) = 0.0f;
-        _X_posterior_vertical(i) = 0.0f;
-        _P_prior_vertical(i,i) = 1.0f;
-        _P_posterior_vertical(i,i) = 1.0f;
-    }
+	// reset vertical wind state
+	for (uint i = 0; i < _dim_vertical; i++) {
+		_X_prior_vertical(i) = 0.0f;
+		_X_posterior_vertical(i) = 0.0f;
+		_P_prior_vertical(i, i) = 1.0f;
+		_P_posterior_vertical(i, i) = 1.0f;
+	}
 
-    // set height to enable convergence
-    _X_prior_horizontal(4) = _init_height;
-    _X_posterior_horizontal(4) = _init_height;
+	// set height to enable convergence
+	_X_prior_horizontal(4) = _init_height;
+	_X_posterior_horizontal(4) = _init_height;
 
-    // increment counter
-    _reset_counter += 1;
+	// increment counter
+	_reset_counter += 1;
 }
 
 void
 FixedwingShearEstimator::perform_prior_update()
 {
-    // get time since last run
-    float dt = (float)(hrt_absolute_time() - _last_run)/1000000.f;
-    _last_run = hrt_absolute_time();
-    if (dt>10.f) {
-        dt = 10.f;
-    }
+	// get time since last run
+	float dt = (float)(hrt_absolute_time() - _last_run) / 1000000.f;
+	_last_run = hrt_absolute_time();
 
-    // perform prior update assuming trivial dynamics of the wind field (mean field stays the same)
-    _X_prior_horizontal = _X_posterior_horizontal;
-    _X_prior_vertical = _X_posterior_vertical;
-    _P_prior_horizontal = _P_posterior_horizontal + dt*_Q_horizontal;
-    _P_prior_vertical = _P_posterior_vertical + dt*_Q_vertical;
+	if (dt > 10.f) {
+		dt = 10.f;
+	}
+
+	// perform prior update assuming trivial dynamics of the wind field (mean field stays the same)
+	_X_prior_horizontal = _X_posterior_horizontal;
+	_X_prior_vertical = _X_posterior_vertical;
+	_P_prior_horizontal = _P_posterior_horizontal + dt * _Q_horizontal;
+	_P_prior_vertical = _P_posterior_vertical + dt * _Q_vertical;
 }
 
 void
 FixedwingShearEstimator::perform_posterior_update(float height, Vector3f wind)
 {
-    //
-    bool error = false;
+	//
+	bool error = false;
 
-    // first fill the horizontal observation matrix:
-    float vx = _X_prior_horizontal(0);
-    float vy = _X_prior_horizontal(1);
-    float h = _X_prior_horizontal(4);
-    float a = _X_prior_horizontal(5);
-    _H_horizontal(0,0) = 1.f/(1.f + expf(-(height-h)*a));
-    _H_horizontal(1,1) = 1.f/(1.f + expf(-(height-h)*a));
-    _H_horizontal(0,2) = 1.f;
-    _H_horizontal(1,3) = 1.f;
-    _H_horizontal(0,4) = -((a*vx*expf(-(height-h)*a)))/powf(1.f + expf(-(height-h)*a),2);
-    _H_horizontal(1,4) = -((a*vy*expf(-(height-h)*a)))/powf(1.f + expf(-(height-h)*a),2);
-    _H_horizontal(0,5) = -((vx*(h-height))*expf(-(height-h)*a))/powf(1.f + expf(-(height-h)*a),2);
-    _H_horizontal(1,5) = -((vx*(h-height))*expf(-(height-h)*a))/powf(1.f + expf(-(height-h)*a),2);
+	// first fill the horizontal observation matrix:
+	float vx = _X_prior_horizontal(0);
+	float vy = _X_prior_horizontal(1);
+	float h = _X_prior_horizontal(4);
+	float a = _X_prior_horizontal(5);
+	_H_horizontal(0, 0) = 1.f / (1.f + expf(-(height - h) * a));
+	_H_horizontal(1, 1) = 1.f / (1.f + expf(-(height - h) * a));
+	_H_horizontal(0, 2) = 1.f;
+	_H_horizontal(1, 3) = 1.f;
+	_H_horizontal(0, 4) = -((a * vx * expf(-(height - h) * a))) / powf(1.f + expf(-(height - h) * a), 2);
+	_H_horizontal(1, 4) = -((a * vy * expf(-(height - h) * a))) / powf(1.f + expf(-(height - h) * a), 2);
+	_H_horizontal(0, 5) = -((vx * (h - height)) * expf(-(height - h) * a)) / powf(1.f + expf(-(height - h) * a), 2);
+	_H_horizontal(1, 5) = -((vx * (h - height)) * expf(-(height - h) * a)) / powf(1.f + expf(-(height - h) * a), 2);
 
-    // then fill the vertical observation matrix
-    for (uint i=0;i<_dim_vertical;i++){
-        _H_vertical(0,i) = powf(height,i);
-    }
+	// then fill the vertical observation matrix
+	for (uint i = 0; i < _dim_vertical; i++) {
+		_H_vertical(0, i) = powf(height, i);
+	}
 
-    // compute Kalman gain matrix for horizontal wind states
-    Matrix<float, 6, 2> tmp1_horizontal = _P_prior_horizontal*_H_horizontal.T();
-    Matrix<float, 2, 2> tmp2_horizontal = _H_horizontal*_P_prior_horizontal*_H_horizontal.T() + _R_horizontal;
-    Matrix<float, 2, 2> inv_horizontal;
-    inv_horizontal(0,0) = tmp2_horizontal(1,1);
-    inv_horizontal(0,1) = -tmp2_horizontal(0,1);
-    inv_horizontal(1,1) = tmp2_horizontal(0,0);
-    inv_horizontal(1,0) = -tmp2_horizontal(1,0);
-    float determinant_horizontal = tmp2_horizontal(0,0)*tmp2_horizontal(1,1) - tmp2_horizontal(1,0)*tmp2_horizontal(0,1);
-    if (fabs(determinant_horizontal)>0.000001f){
-        inv_horizontal /= determinant_horizontal;
-        _K_horizontal = tmp1_horizontal*inv_horizontal;
-    }
-    else{
-        PX4_WARN("singular horizontal matrix, resetting filter");
-        error = true;
-    }
+	// compute Kalman gain matrix for horizontal wind states
+	Matrix<float, 6, 2> tmp1_horizontal = _P_prior_horizontal * _H_horizontal.T();
+	Matrix<float, 2, 2> tmp2_horizontal = _H_horizontal * _P_prior_horizontal * _H_horizontal.T() + _R_horizontal;
+	Matrix<float, 2, 2> inv_horizontal;
+	inv_horizontal(0, 0) = tmp2_horizontal(1, 1);
+	inv_horizontal(0, 1) = -tmp2_horizontal(0, 1);
+	inv_horizontal(1, 1) = tmp2_horizontal(0, 0);
+	inv_horizontal(1, 0) = -tmp2_horizontal(1, 0);
+	float determinant_horizontal = tmp2_horizontal(0, 0) * tmp2_horizontal(1, 1) - tmp2_horizontal(1,
+				       0) * tmp2_horizontal(0, 1);
 
-    // then fill the vertical observation matrix
-    for (uint i=0;i<_dim_vertical;i++){
-        _H_vertical(0,i) = powf(height,i);
-    }
+	if (fabs(determinant_horizontal) > 0.000001f) {
+		inv_horizontal /= determinant_horizontal;
+		_K_horizontal = tmp1_horizontal * inv_horizontal;
 
-    // compute Kalman gain matrix for vertical wind states
-    Matrix<float, _dim_vertical, 1> tmp1_vertical = _P_prior_vertical*_H_vertical.T();
-    Matrix<float, 1, 1> tmp2_vertical = _H_vertical*_P_prior_vertical*_H_vertical.T() + _R_vertical;
-    Matrix<float, 1, 1> inv_vertical;
-    float determinant_vertical = tmp2_vertical(0,0);
-    if (fabs(determinant_vertical)>0.000001f){
-        inv_vertical(0,0) = 1.f / determinant_vertical;
-        _K_vertical = tmp1_vertical*inv_vertical;
-    }
-    else{
-        PX4_WARN("singular vertical matrix, resetting filter");
-        error = true;
-    }
+	} else {
+		PX4_WARN("singular horizontal matrix, resetting filter");
+		error = true;
+	}
 
-    if (error) {
-        reset_filter();
-    }
-    else {
-        // perform horizontal update
-        Vector<float, 2> z_expected_horizontal = (Vector<float, 2>) (_H_horizontal*_X_prior_horizontal);
-        Vector<float, 2> wind_horizontal;
-        Matrix<float, 6, 6> identity_1;
-        wind_horizontal(0) = wind(0);
-        wind_horizontal(1) = wind(1);
-        identity_1.setIdentity();
-        _X_posterior_horizontal = _X_prior_horizontal + _K_horizontal*(wind_horizontal - z_expected_horizontal);
-        _P_posterior_horizontal = (identity_1 - _K_horizontal*_H_horizontal)*_P_prior_horizontal;
+	// then fill the vertical observation matrix
+	for (uint i = 0; i < _dim_vertical; i++) {
+		_H_vertical(0, i) = powf(height, i);
+	}
 
-        // perform vertical update
-        Vector<float, 1> z_expected_vertical = (Vector<float, 1>) (_H_vertical*_X_prior_vertical);
-        Vector<float, 1> wind_vertical;
-        Matrix<float, _dim_vertical, _dim_vertical> identity_2;
-        wind_vertical(0) = wind(2);
-        identity_2.setIdentity();
-        _X_posterior_vertical = _X_prior_vertical + _K_vertical*(wind_vertical - z_expected_vertical);
-        _P_posterior_vertical = (identity_2 - _K_vertical*_H_vertical)*_P_prior_vertical;
-    }
+	// compute Kalman gain matrix for vertical wind states
+	Matrix<float, _dim_vertical, 1> tmp1_vertical = _P_prior_vertical * _H_vertical.T();
+	Matrix<float, 1, 1> tmp2_vertical = _H_vertical * _P_prior_vertical * _H_vertical.T() + _R_vertical;
+	Matrix<float, 1, 1> inv_vertical;
+	float determinant_vertical = tmp2_vertical(0, 0);
 
-    // find the correct sign of params (parametrization is not unique)
-    /*
-    if (_X_posterior_horizontal(5)<0.f) {
-        _X_posterior_horizontal(0) *= -1.f;
-        _X_posterior_horizontal(1) *= -1.f;
-        _X_posterior_horizontal(5) *= -1.f;
-    }
-    */
+	if (fabs(determinant_vertical) > 0.000001f) {
+		inv_vertical(0, 0) = 1.f / determinant_vertical;
+		_K_vertical = tmp1_vertical * inv_vertical;
+
+	} else {
+		PX4_WARN("singular vertical matrix, resetting filter");
+		error = true;
+	}
+
+	if (error) {
+		reset_filter();
+
+	} else {
+		// perform horizontal update
+		Vector<float, 2> z_expected_horizontal = (Vector<float, 2>)(_H_horizontal * _X_prior_horizontal);
+		Vector<float, 2> wind_horizontal;
+		Matrix<float, 6, 6> identity_1;
+		wind_horizontal(0) = wind(0);
+		wind_horizontal(1) = wind(1);
+		identity_1.setIdentity();
+		_X_posterior_horizontal = _X_prior_horizontal + _K_horizontal * (wind_horizontal - z_expected_horizontal);
+		_P_posterior_horizontal = (identity_1 - _K_horizontal * _H_horizontal) * _P_prior_horizontal;
+
+		// perform vertical update
+		Vector<float, 1> z_expected_vertical = (Vector<float, 1>)(_H_vertical * _X_prior_vertical);
+		Vector<float, 1> wind_vertical;
+		Matrix<float, _dim_vertical, _dim_vertical> identity_2;
+		wind_vertical(0) = wind(2);
+		identity_2.setIdentity();
+		_X_posterior_vertical = _X_prior_vertical + _K_vertical * (wind_vertical - z_expected_vertical);
+		_P_posterior_vertical = (identity_2 - _K_vertical * _H_vertical) * _P_prior_vertical;
+	}
+
+	// find the correct sign of params (parametrization is not unique)
+	/*
+	if (_X_posterior_horizontal(5)<0.f) {
+	    _X_posterior_horizontal(0) *= -1.f;
+	    _X_posterior_horizontal(1) *= -1.f;
+	    _X_posterior_horizontal(5) *= -1.f;
+	}
+	*/
 
 }
 
 void
 FixedwingShearEstimator::Run()
 {
-    if (should_exit()) {
+	if (should_exit()) {
 		_soaring_controller_wind_sub.unregisterCallback();
 		exit_and_cleanup();
 		return;
 	}
 
-    perf_begin(_loop_perf);
+	perf_begin(_loop_perf);
 
-    // only run controller if wind info changed
-	if (_soaring_controller_wind_sub.update(&_soaring_controller_wind))
-    {   
-        // only update parameters if they changed
+	// only run controller if wind info changed
+	if (_soaring_controller_wind_sub.update(&_soaring_controller_wind)) {
+		// only update parameters if they changed
 		bool params_updated = _parameter_update_sub.updated();
 
 		// check for parameter updates
@@ -305,34 +313,35 @@ FixedwingShearEstimator::Run()
 			updateParams();
 			parameters_update();
 		}
-        // get current measurement
-        _current_wind = Vector3f(_soaring_controller_wind.wind_estimate_filtered);
-        _current_height = Vector3f(_soaring_controller_wind.position)(2);
 
-        // prior update
-        perform_prior_update();
+		// get current measurement
+		_current_wind = Vector3f(_soaring_controller_wind.wind_estimate_filtered);
+		_current_height = Vector3f(_soaring_controller_wind.position)(2);
 
-        // posterior update
-        perform_posterior_update(_current_height, _current_wind);
+		// prior update
+		perform_prior_update();
 
-        // check if filter diverges 
-        // maybe reset filters...
-        //reset_filter();
+		// posterior update
+		perform_posterior_update(_current_height, _current_wind);
 
-        // publish shear params
-        // ========================================
-        // publish controller position in ENU frame
-        // ========================================
-        _soaring_estimator_shear.timestamp = hrt_absolute_time();
-        _soaring_estimator_shear.vx = _X_posterior_horizontal(0);
-        _soaring_estimator_shear.vy = _X_posterior_horizontal(1);
-        _soaring_estimator_shear.bx = _X_posterior_horizontal(2);
-        _soaring_estimator_shear.bx = _X_posterior_horizontal(3);
-        _soaring_estimator_shear.h = _X_posterior_horizontal(4);
-        _soaring_estimator_shear.a = _X_posterior_horizontal(5);
-        _soaring_estimator_shear.reset_counter = _reset_counter;
-        _soaring_estimator_shear_pub.publish(_soaring_estimator_shear);
-    }
+		// check if filter diverges
+		// maybe reset filters...
+		//reset_filter();
+
+		// publish shear params
+		// ========================================
+		// publish controller position in ENU frame
+		// ========================================
+		_soaring_estimator_shear.timestamp = hrt_absolute_time();
+		_soaring_estimator_shear.vx = _X_posterior_horizontal(0);
+		_soaring_estimator_shear.vy = _X_posterior_horizontal(1);
+		_soaring_estimator_shear.bx = _X_posterior_horizontal(2);
+		_soaring_estimator_shear.bx = _X_posterior_horizontal(3);
+		_soaring_estimator_shear.h = _X_posterior_horizontal(4);
+		_soaring_estimator_shear.a = _X_posterior_horizontal(5);
+		_soaring_estimator_shear.reset_counter = _reset_counter;
+		_soaring_estimator_shear_pub.publish(_soaring_estimator_shear);
+	}
 
 
 }

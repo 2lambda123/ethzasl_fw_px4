@@ -1,5 +1,5 @@
 /**
- * Implementation of a generic incremental position controller 
+ * Implementation of a generic incremental position controller
  * using incremental nonlinear dynamic inversion and differential flatness
  * for a fixed wing aircraft during dynamic soaring cycles.
  * The controller directly outputs actuator deflections for ailerons, elevator and rudder.
@@ -112,21 +112,21 @@ private:
 
 	uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
 
-    // Subscriptions
+	// Subscriptions
 	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};						// vehicle status
-	uORB::Subscription _airspeed_validated_sub{ORB_ID(airspeed_validated)};             // airspeed 
-    uORB::Subscription _airflow_aoa_sub{ORB_ID(airflow_aoa)};                           // angle of attack
-    uORB::Subscription _airflow_slip_sub{ORB_ID(airflow_slip)};                         // angle of sideslip
+	uORB::Subscription _airspeed_validated_sub{ORB_ID(airspeed_validated)};             // airspeed
+	uORB::Subscription _airflow_aoa_sub{ORB_ID(airflow_aoa)};                           // angle of attack
+	uORB::Subscription _airflow_slip_sub{ORB_ID(airflow_slip)};                         // angle of sideslip
 	uORB::Subscription _vehicle_acceleration_sub{ORB_ID(vehicle_acceleration)};     	// linear acceleration
-    uORB::Subscription _vehicle_local_position_sub{ORB_ID(vehicle_local_position)};     // local NED position
-    uORB::Subscription _home_position_sub{ORB_ID(home_position)};						// home position
-    uORB::Subscription _vehicle_attitude_sub{ORB_ID(vehicle_attitude)};                 // vehicle attitude
-    uORB::Subscription _vehicle_angular_acceleration_sub{ORB_ID(vehicle_angular_acceleration)}; // vehicle body accel
+	uORB::Subscription _vehicle_local_position_sub{ORB_ID(vehicle_local_position)};     // local NED position
+	uORB::Subscription _home_position_sub{ORB_ID(home_position)};						// home position
+	uORB::Subscription _vehicle_attitude_sub{ORB_ID(vehicle_attitude)};                 // vehicle attitude
+	uORB::Subscription _vehicle_angular_acceleration_sub{ORB_ID(vehicle_angular_acceleration)}; // vehicle body accel
 	uORB::Subscription _soaring_controller_status_sub{ORB_ID(soaring_controller_status)};			// vehicle status flags
 	uORB::Subscription _actuator_controls_sub{ORB_ID(actuator_controls_0)};
 	uORB::Subscription _manual_control_setpoint_sub{ORB_ID(manual_control_setpoint)};
-	
-    // Publishers
+	uORB::Subscription _control_mode_sub{ORB_ID(vehicle_control_mode)};
+	// Publishers
 	uORB::Publication<actuator_controls_s>							_actuators_0_pub;
 	uORB::Publication<vehicle_attitude_setpoint_s>					_attitude_sp_pub;
 	uORB::Publication<vehicle_rates_setpoint_s>						_angular_vel_sp_pub{ORB_ID(vehicle_rates_setpoint)};
@@ -139,7 +139,7 @@ private:
 	uORB::Publication<offboard_control_mode_s>						_offboard_control_mode_pub{ORB_ID(offboard_control_mode)};
 	uORB::Publication<debug_value_s>								_debug_value_pub{ORB_ID(debug_value)};
 
-    // Message structs
+	// Message structs
 	vehicle_angular_acceleration_setpoint_s _angular_accel_sp {};
 	actuator_controls_s			_actuators {};			// actuator commands
 	manual_control_setpoint_s	_manual_control_setpoint {};			///< r/c channel data
@@ -158,7 +158,7 @@ private:
 	soaring_controller_status_s	_soaring_controller_status {};	///< soaring controller status
 	soaring_controller_heartbeat_s	_soaring_controller_heartbeat{};	///< soaring controller hrt
 	soaring_controller_position_setpoint_s	_soaring_controller_position_setpoint{};	///< soaring controller pos setpoint
-	soaring_controller_position_s	_soaring_controller_position{};	///< soaring controller pos 
+	soaring_controller_position_s	_soaring_controller_position{};	///< soaring controller pos
 	soaring_controller_wind_s	_soaring_controller_wind{};	///< soaring controller wind
 	debug_value_s				_debug_value{};			// slip angle
 
@@ -226,7 +226,7 @@ private:
 	uint8_t _pos_reset_counter{0};				///< captures the number of times the estimator has reset the horizontal position
 	uint8_t _alt_reset_counter{0};				///< captures the number of times the estimator has reset the altitude state
 
-	
+
 	// Update our local parameter cache.
 	int		parameters_update();
 
@@ -242,7 +242,7 @@ private:
 	void		vehicle_angular_velocity_poll();
 	void		vehicle_angular_acceleration_poll();
 	void		actuator_controls_poll();
-	
+
 	void		control_update();
 	void 		manual_control_setpoint_poll();
 	void		vehicle_command_poll();
@@ -260,19 +260,30 @@ private:
 	void _select_trajectory(float initial_energy);				// select the correct trajectory based on available energy
 	void _read_trajectory_coeffs_csv(char *filename);				// read in the correct coefficients of the appropriate trajectory
 	void _set_wind_estimate(Vector3f wind);
-	float _get_closest_t(Vector3f pos);				// get the normalized time, at which the reference path is closest to the current position
-	Vector<float, _num_basis_funs> _get_basis_funs(float t=0);			// compute the vector of basis functions at normalized time t in [0,1]
-	Vector<float, _num_basis_funs> _get_d_dt_basis_funs(float t=0);	// compute the vector of basis function gradients at normalized time t in [0,1]
-	Vector<float, _num_basis_funs> _get_d2_dt2_basis_funs(float t=0);	// compute the vector of basis function curvatures at normalized time t in [0,1]
+	float _get_closest_t(Vector3f
+			     pos);				// get the normalized time, at which the reference path is closest to the current position
+	Vector<float, _num_basis_funs> _get_basis_funs(float t =
+				0);			// compute the vector of basis functions at normalized time t in [0,1]
+	Vector<float, _num_basis_funs> _get_d_dt_basis_funs(float t =
+				0);	// compute the vector of basis function gradients at normalized time t in [0,1]
+	Vector<float, _num_basis_funs> _get_d2_dt2_basis_funs(float t =
+				0);	// compute the vector of basis function curvatures at normalized time t in [0,1]
 	void _load_basis_coefficients();		// load the coefficients of the current path approximation
-	Vector3f _get_position_ref(float t=0);	// get the reference position on the current path, at normalized time t in [0,1]
-	Vector3f _get_velocity_ref(float t=0, float T=1);	// get the reference velocity on the current path, at normalized time t in [0,1], with an intended cycle time of T
-	Vector3f _get_acceleration_ref(float t=0, float T=1);	// get the reference acceleration on the current path, at normalized time t in [0,1], with an intended cycle time of T
-	Quatf _get_attitude_ref(float t=0, float T=1);	// get the reference attitude on the current path, at normalized time t in [0,1], with an intended cycle time of T
-	Vector3f _get_angular_velocity_ref(float t=0, float T=1);	// get the reference angular velocity on the current path, at normalized time t in [0,1], with an intended cycle time of T
-	Vector3f _get_angular_acceleration_ref(float t=0, float T=1);	// get the reference angular acceleration on the current path, at normalized time t in [0,1], with an intended cycle time of T
+	Vector3f _get_position_ref(float t =
+					   0);	// get the reference position on the current path, at normalized time t in [0,1]
+	Vector3f _get_velocity_ref(float t = 0,
+				   float T = 1);	// get the reference velocity on the current path, at normalized time t in [0,1], with an intended cycle time of T
+	Vector3f _get_acceleration_ref(float t = 0,
+				       float T = 1);	// get the reference acceleration on the current path, at normalized time t in [0,1], with an intended cycle time of T
+	Quatf _get_attitude_ref(float t = 0,
+				float T = 1);	// get the reference attitude on the current path, at normalized time t in [0,1], with an intended cycle time of T
+	Vector3f _get_angular_velocity_ref(float t = 0,
+					   float T = 1);	// get the reference angular velocity on the current path, at normalized time t in [0,1], with an intended cycle time of T
+	Vector3f _get_angular_acceleration_ref(float t = 0,
+					       float T = 1);	// get the reference angular acceleration on the current path, at normalized time t in [0,1], with an intended cycle time of T
 	Quatf _get_attitude(Vector3f vel, Vector3f f);	// get the attitude to produce force f while flying with velocity vel
-	Vector3f _compute_INDI_stage_1(Vector3f pos_ref, Vector3f vel_ref, Vector3f acc_ref, Vector3f omega_ref, Vector3f alpha_ref);
+	Vector3f _compute_INDI_stage_1(Vector3f pos_ref, Vector3f vel_ref, Vector3f acc_ref, Vector3f omega_ref,
+				       Vector3f alpha_ref);
 	Vector3f _compute_INDI_stage_2(Vector3f ctrl);
 	Vector3f _compute_actuator_deflections(Vector3f ctrl);
 
@@ -299,9 +310,9 @@ private:
 	Vector3f _omega;	// angular rate vector
 	Vector3f _alpha;	// angular acceleration vector
 	float _k_ail;
-    float _k_ele;
-    float _k_d_roll;
-    float _k_d_pitch;
+	float _k_ele;
+	float _k_d_roll;
+	float _k_d_pitch;
 	hrt_abstime _last_run{0};
 
 	// controller frequency
@@ -312,10 +323,11 @@ private:
 	math::LowPassFilter2p _lp_filter_force[3] {{_sample_frequency, _cutoff_frequency_1}, {_sample_frequency, _cutoff_frequency_1}, {_sample_frequency, _cutoff_frequency_1}};	// force command
 	math::LowPassFilter2p _lp_filter_omega[3] {{_sample_frequency, _cutoff_frequency_1}, {_sample_frequency, _cutoff_frequency_1}, {_sample_frequency, _cutoff_frequency_1}};	// body rates
 	// smoothing filter to reject HF noise in control output
-	const float _cutoff_frequency_smoothing = 20.f; // we want to attenuate noise at 30Hz with -10dB -> need cutoff frequency 5 times lower (6Hz)
+	const float _cutoff_frequency_smoothing =
+		20.f; // we want to attenuate noise at 30Hz with -10dB -> need cutoff frequency 5 times lower (6Hz)
 	math::LowPassFilter2p _lp_filter_ctrl0[3] {{_sample_frequency, _cutoff_frequency_smoothing}, {_sample_frequency, _cutoff_frequency_smoothing}, {_sample_frequency, _cutoff_frequency_smoothing}};	// force command stage 1
 	math::LowPassFilter2p _lp_filter_ctrl1[3] {{_sample_frequency, _cutoff_frequency_smoothing}, {_sample_frequency, _cutoff_frequency_smoothing}, {_sample_frequency, _cutoff_frequency_smoothing}};	// control output stage 1
-	math::LowPassFilter2p _lp_filter_rud {_sample_frequency, 10};	// rudder command 
+	math::LowPassFilter2p _lp_filter_rud {_sample_frequency, 10};	// rudder command
 	// Low-Pass filters stage 2
 	const float _cutoff_frequency_2 = 20.f; // MUST MATCH PARAM "IMU_DGYRO_CUTOFF"
 	math::LowPassFilter2p _lp_filter_delay[3] {{_sample_frequency, _cutoff_frequency_2}, {_sample_frequency, _cutoff_frequency_2}, {_sample_frequency, _cutoff_frequency_2}};	// filter to match acceleration processing delay
@@ -377,9 +389,9 @@ private:
 
 	// vectors defining the gridding for trajectory selection: initial velocities, wind speed and shear strength
 	const static size_t _gridsize = 11;
-	float _energy_arr[_gridsize] = {14.f,16.f,18.f,20.f,22.f,24.f,26.f,28.f,30.f,32.f,34.f};	
-	float _v_max_arr[_gridsize] = {10.f,11.f,12.f,13.f,14.f,15.f,16.f,17.f,18.f,19.f,20.f};	
-	float _alpha_arr[_gridsize] = {0.1f,0.2f,0.3f,0.4f,0.5f,0.6f,0.7f,0.8f,0.9f,1.0f,1.1f};	
+	float _energy_arr[_gridsize] = {14.f, 16.f, 18.f, 20.f, 22.f, 24.f, 26.f, 28.f, 30.f, 32.f, 34.f};
+	float _v_max_arr[_gridsize] = {10.f, 11.f, 12.f, 13.f, 14.f, 15.f, 16.f, 17.f, 18.f, 19.f, 20.f};
+	float _alpha_arr[_gridsize] = {0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f};
 
 
 	// helper variables
