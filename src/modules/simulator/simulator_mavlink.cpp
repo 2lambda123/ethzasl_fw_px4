@@ -367,6 +367,14 @@ void Simulator::handle_message(const mavlink_message_t *msg)
 	case MAVLINK_MSG_ID_HIL_STATE_QUATERNION:
 		handle_message_hil_state_quaternion(msg);
 		break;
+
+	case MAVLINK_MSG_ID_SENSOR_AIRFLOW_ANGLES:
+		handle_message_sensor_airflow_angles(msg);
+		break;
+
+	case MAVLINK_MSG_ID_ASLCTRL_DEBUG:
+		handle_message_aslctrl_debug(msg);
+		break;
 	}
 }
 
@@ -375,6 +383,41 @@ void Simulator::handle_message_distance_sensor(const mavlink_message_t *msg)
 	mavlink_distance_sensor_t dist;
 	mavlink_msg_distance_sensor_decode(msg, &dist);
 	publish_distance_topic(&dist);
+}
+
+void Simulator::handle_message_sensor_airflow_angles(const mavlink_message_t *msg)
+{
+	mavlink_sensor_airflow_angles_t airflow_angles;
+	mavlink_msg_sensor_airflow_angles_decode(msg, &airflow_angles);
+
+	uint64_t timestamp = hrt_absolute_time();
+
+	airflow_aoa_s airflow_aoa;
+	airflow_aoa.timestamp = timestamp;
+	airflow_aoa.valid = airflow_angles.angleofattack_valid;
+	airflow_aoa.aoa_rad = airflow_angles.angleofattack;
+	_airflow_aoa_pub.publish(airflow_aoa);
+
+	airflow_slip_s airflow_slip;
+	airflow_slip.timestamp = timestamp;
+	airflow_slip.valid = airflow_angles.sideslip_valid;
+	airflow_slip.slip_rad = airflow_angles.sideslip;
+	_airflow_slip_pub.publish(airflow_slip);
+}
+
+void Simulator::handle_message_aslctrl_debug(const mavlink_message_t *msg)
+{
+	mavlink_aslctrl_debug_t dbg;
+	mavlink_msg_aslctrl_debug_decode(msg, &dbg);
+
+	uint64_t timestamp = hrt_absolute_time();
+
+	wind_gt_sim_s wind_gt_sim;
+	wind_gt_sim.timestamp = timestamp;
+	wind_gt_sim.w_n = dbg.f_1;
+	wind_gt_sim.w_e = dbg.f_2;
+	wind_gt_sim.w_d = dbg.f_3;
+	_wind_gt_sim_pub.publish(wind_gt_sim);
 }
 
 void Simulator::handle_message_hil_gps(const mavlink_message_t *msg)

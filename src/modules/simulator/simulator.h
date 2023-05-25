@@ -73,10 +73,13 @@
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/vehicle_command.h>
 #include <uORB/topics/vehicle_command_ack.h>
+#include <uORB/topics/airflow_aoa.h>
+#include <uORB/topics/airflow_slip.h>
+#include <uORB/topics/wind_gt_sim.h>
 
 #include <random>
 
-#include <v2.0/common/mavlink.h>
+#include <v2.0/ASLUAV/mavlink.h>
 #include <v2.0/mavlink_types.h>
 
 using namespace time_literals;
@@ -228,6 +231,8 @@ private:
 	void handle_message_optical_flow(const mavlink_message_t *msg);
 	void handle_message_rc_channels(const mavlink_message_t *msg);
 	void handle_message_vision_position_estimate(const mavlink_message_t *msg);
+	void handle_message_sensor_airflow_angles(const mavlink_message_t *msg);
+	void handle_message_aslctrl_debug(const mavlink_message_t *msg);
 
 	void parameters_update(bool force);
 	void poll_for_MAVLink_messages();
@@ -249,6 +254,9 @@ private:
 	uORB::Publication<vehicle_global_position_s>	_gpos_ground_truth_pub{ORB_ID(vehicle_global_position_groundtruth)};
 	uORB::Publication<vehicle_local_position_s>	_lpos_ground_truth_pub{ORB_ID(vehicle_local_position_groundtruth)};
 	uORB::Publication<input_rc_s>			_input_rc_pub{ORB_ID(input_rc)};
+	uORB::Publication<airflow_aoa_s>			_airflow_aoa_pub{ORB_ID(airflow_aoa)};
+	uORB::Publication<airflow_slip_s>			_airflow_slip_pub{ORB_ID(airflow_slip)};
+	uORB::Publication<wind_gt_sim_s>			_wind_gt_sim_pub{ORB_ID(wind_gt_sim)};
 
 	// HIL GPS
 	static constexpr int MAX_GPS = 3;

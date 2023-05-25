@@ -187,6 +187,7 @@ set(msg_files
 	vehicle_trajectory_waypoint.msg
 	vtol_vehicle_status.msg
 	wheel_encoders.msg
+	wind_gt_sim.msg
 	wind.msg
 	yaw_estimator_status.msg
 )
