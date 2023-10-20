@@ -92,6 +92,7 @@ set(models
 	tailsitter
 	techpod
 	tiltrotor
+	tiltrotor_cam
 	typhoon_h480
 	uuv_bluerov2_heavy
 	uuv_hippocampus
