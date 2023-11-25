@@ -151,14 +151,15 @@ PARAM_DEFINE_INT32(ASPD_PRIMARY, 1);
  * Note that the data missing check is enabled if any of the options is set.
  *
  * @min 0
- * @max 15
+ * @max 31
  * @bit 0 Only data missing check (triggers if more than 1s no data)
- * @bit 1 Data stuck (triggers if data is exactly constant for 2s)
+ * @bit 1 Data stuck (triggers if data is exactly constant for 2s in FW mode)
  * @bit 2 Innovation check (see ASPD_FS_INNOV)
  * @bit 3 Load factor check (triggers if measurement is below stall speed)
+ * @bit 4 Check for data variation in first 10s after sensor connection
  * @group Airspeed Validator
  */
-PARAM_DEFINE_INT32(ASPD_DO_CHECKS, 7);
+PARAM_DEFINE_INT32(ASPD_DO_CHECKS, 23);
 
 /**
  * Enable fallback to sensor-less airspeed estimation
@@ -227,3 +228,17 @@ PARAM_DEFINE_INT32(ASPD_FS_T_STOP, 2);
  * @max 1000
  */
 PARAM_DEFINE_INT32(ASPD_FS_T_START, -1);
+
+/**
+ * Horizontal wind uncertainty threshold for synthetic airspeed.
+ *
+ * The synthetic airspeed estimate (from groundspeed and heading) will be declared valid
+ * as soon and as long the horizontal wind uncertainty drops below this value.
+ *
+ * @unit m/s
+ * @min 0.001
+ * @max 5
+ * @decimal 3
+ * @group Airspeed Validator
+ */
+PARAM_DEFINE_FLOAT(ASPD_WERR_THR, 0.55f);

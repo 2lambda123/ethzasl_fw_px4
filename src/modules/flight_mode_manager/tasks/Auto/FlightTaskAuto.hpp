@@ -71,8 +71,7 @@ enum class WaypointType : int {
 	loiter = position_setpoint_s::SETPOINT_TYPE_LOITER,
 	takeoff = position_setpoint_s::SETPOINT_TYPE_TAKEOFF,
 	land = position_setpoint_s::SETPOINT_TYPE_LAND,
-	idle = position_setpoint_s::SETPOINT_TYPE_IDLE,
-	follow_target = position_setpoint_s::SETPOINT_TYPE_FOLLOW_TARGET,
+	idle = position_setpoint_s::SETPOINT_TYPE_IDLE
 };
 
 enum class State {
@@ -95,7 +94,6 @@ public:
 	void overrideCruiseSpeed(const float cruise_speed_m_s) override;
 
 protected:
-	matrix::Vector2f _getTargetVelocityXY(); /**< only used for follow-me and only here because of legacy reason.*/
 	void _updateInternalWaypoints(); /**< Depending on state of vehicle, the internal waypoints might differ from target (for instance if offtrack). */
 	bool _compute_heading_from_2D_vector(float &heading, matrix::Vector2f v); /**< Computes and sets heading a 2D vector */
 
@@ -133,7 +131,6 @@ protected:
 
 	State _current_state{State::none};
 	float _target_acceptance_radius{0.0f}; /**< Acceptances radius of the target */
-	int _mission_gear{landing_gear_s::GEAR_KEEP};
 
 	float _yaw_sp_prev{NAN};
 	AlphaFilter<float> _yawspeed_filter;
@@ -197,7 +194,7 @@ private:
 	_triplet_next_wp; /**< next triplet from navigator which may differ from the intenal one (_next_wp) depending on the vehicle state.*/
 	matrix::Vector3f _closest_pt; /**< closest point to the vehicle position on the line previous - target */
 
-	hrt_abstime _time_last_cruise_speed_override{0}; ///< timestamp the cruise speed was last time overriden using DO_CHANGE_SPEED
+	hrt_abstime _time_last_cruise_speed_override{0}; ///< timestamp the cruise speed was last time overridden using DO_CHANGE_SPEED
 
 	MapProjection _reference_position{}; /**< Class used to project lat/lon setpoint into local frame. */
 	float _reference_altitude{NAN}; /**< Altitude relative to ground. */

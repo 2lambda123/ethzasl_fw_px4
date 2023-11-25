@@ -7,7 +7,8 @@ pipeline {
     stage('Analysis') {
       when {
         anyOf {
-          branch 'master'
+          branch 'main'
+          branch 'master' // should be removed, but in case there is something going on...
           branch 'pr-jenkins' // for testing
         }
       }
@@ -25,15 +26,15 @@ pipeline {
         //       echo $0;
         //       mkdir -p catkin_ws/src;
         //       cd catkin_ws;
-        //       git -C ${WORKSPACE}/catkin_ws/src/Firmware submodule update --init --recursive --force Tools/sitl_gazebo
-        //       git clone --recursive ${WORKSPACE}/catkin_ws/src/Firmware/Tools/sitl_gazebo src/mavlink_sitl_gazebo;
+        //       git -C ${WORKSPACE}/catkin_ws/src/Firmware submodule update --init --recursive --force Tools/simulation/gazebo/sitl_gazebo
+        //       git clone --recursive ${WORKSPACE}/catkin_ws/src/Firmware/Tools/simulation/gazebo/sitl_gazebo src/mavlink_sitl_gazebo;
         //       git -C ${WORKSPACE}/catkin_ws/src/Firmware fetch --tags;
         //       source /opt/ros/melodic/setup.bash;
         //       export PYTHONPATH=/opt/ros/$ROS_DISTRO/lib/python2.7/dist-packages:/usr/lib/python2.7/dist-packages:/usr/local/lib/python2.7/dist-packages;
         //       catkin init;
         //       catkin build -j$(nproc) -l$(nproc);
         //     '''
-        //     // test if the binary was correctly installed and runs using 'mavros_posix_silt.launch'
+        //     // test if the binary was correctly installed and runs using 'mavros_posix_sitl.launch'
         //     sh '''#!/bin/bash -l
         //       echo $0;
         //       source catkin_ws/devel/setup.bash;
@@ -67,7 +68,7 @@ pipeline {
               unset ROS_DISTRO;
               mkdir -p colcon_ws/src;
               cd colcon_ws;
-              git -C ${WORKSPACE}/colcon_ws/src/Firmware submodule update --init --recursive --force Tools/sitl_gazebo;
+              git -C ${WORKSPACE}/colcon_ws/src/Firmware submodule update --init --recursive --force Tools/simulation/gazebo/sitl_gazebo;
               git -C ${WORKSPACE}/colcon_ws/src/Firmware fetch --tags;
               source /opt/ros/foxy/setup.sh;
               colcon build --event-handlers console_direct+ --symlink-install;
@@ -161,6 +162,35 @@ pipeline {
           }
         }
 
+        stage('failsafe docs') {
+          agent {
+            docker { image 'px4io/px4-dev-base-focal:2021-08-18' }
+          }
+          steps {
+            sh '''#!/bin/bash -l
+			echo $0;
+            git clone https://github.com/emscripten-core/emsdk.git _emscripten_sdk;
+            cd _emscripten_sdk;
+            ./emsdk install latest;
+            ./emsdk activate latest;
+            . ./_emscripten_sdk/emsdk_env.sh;
+			make failsafe_web;
+			cd build/px4_sitl_default_failsafe_web;
+			mkdir -p failsafe_sim;
+			cp index.* parameters.json failsafe_sim;
+			'''
+            dir('build/px4_sitl_default_failsafe_web') {
+              archiveArtifacts(artifacts: 'failsafe_sim/*')
+              stash includes: 'failsafe_sim/*', name: 'failsafe_sim'
+            }
+          }
+          post {
+            always {
+              sh 'make distclean; git clean -ff -x -d .'
+            }
+          }
+        }
+
         stage('uORB graphs') {
           agent {
             docker {
@@ -202,22 +232,25 @@ pipeline {
             unstash 'metadata_parameters'
             unstash 'metadata_module_documentation'
             unstash 'msg_documentation'
+            unstash 'failsafe_sim'
             unstash 'uorb_graph'
             withCredentials([usernamePassword(credentialsId: 'px4buildbot_github_personal_token', passwordVariable: 'GIT_PASS', usernameVariable: 'GIT_USER')]) {
-              sh('git clone https://${GIT_USER}:${GIT_PASS}@github.com/PX4/px4_user_guide.git')
-              sh('cp airframes.md px4_user_guide/en/airframes/airframe_reference.md')
-              sh('cp parameters.md px4_user_guide/en/advanced_config/parameter_reference.md')
-              sh('cp -R modules/*.md px4_user_guide/en/modules/')
-              sh('cp -R graph_*.json px4_user_guide/.vuepress/public/en/middleware/')
-              sh('cp -R msg_docs/*.md px4_user_guide/en/msg_docs/')
-              sh('cd px4_user_guide; git status; git add .; git commit -a -m "Update PX4 Firmware metadata `date`" || true')
-              sh('cd px4_user_guide; git push origin master || true')
-              sh('rm -rf px4_user_guide')
+              sh('git clone https://${GIT_USER}:${GIT_PASS}@github.com/PX4/PX4-user_guide.git')
+              sh('cp airframes.md PX4-user_guide/en/airframes/airframe_reference.md')
+              sh('cp parameters.md PX4-user_guide/en/advanced_config/parameter_reference.md')
+              sh('cp -R modules/*.md PX4-user_guide/en/modules/')
+              sh('cp -R graph_*.json PX4-user_guide/.vuepress/public/en/middleware/')
+              sh('cp -R msg_docs/*.md PX4-user_guide/en/msg_docs/')
+              sh('cp -R failsafe_sim/* PX4-user_guide/.vuepress/public/en/config/failsafe')
+              sh('cd PX4-user_guide; git status; git add .; git commit -a -m "Update PX4 Firmware metadata `date`" || true')
+              sh('cd PX4-user_guide; git push origin main || true')
+              sh('rm -rf PX4-user_guide')
             }
           }
           when {
             anyOf {
-              branch 'master'
+              branch 'main'
+              branch 'master' // should be removed, but in case there is something going on...
               branch 'pr-jenkins' // for testing
             }
           }
@@ -245,7 +278,8 @@ pipeline {
           }
           when {
             anyOf {
-              branch 'master'
+              branch 'main'
+              branch 'master' // should be removed, but in case there is something going on...
               branch 'pr-jenkins' // for testing
             }
           }
@@ -278,7 +312,8 @@ pipeline {
           }
           when {
             anyOf {
-              branch 'master'
+              branch 'main'
+              branch 'master' // should be removed, but in case there is something going on...
               branch 'pr-jenkins' // for testing
             }
           }
@@ -293,10 +328,10 @@ pipeline {
             sh('make distclean; git clean -ff -x -d .')
             withCredentials([usernamePassword(credentialsId: 'px4buildbot_github_personal_token', passwordVariable: 'GIT_PASS', usernameVariable: 'GIT_USER')]) {
               sh("git clone https://${GIT_USER}:${GIT_PASS}@github.com/PX4/px4_msgs.git")
-              // 'master' branch
+              // 'main' branch
               sh('./msg/tools/uorb_to_ros_msgs.py msg/ px4_msgs/msg/')
               sh('cd px4_msgs; git status; git add .; git commit -a -m "Update message definitions `date`" || true')
-              sh('cd px4_msgs; git push origin master || true')
+              sh('cd px4_msgs; git push origin main || true')
               // 'ros1' branch
               sh('cd px4_msgs; git checkout ros1')
               sh('./msg/tools/uorb_to_ros_msgs.py msg/ px4_msgs/msg/')
@@ -307,7 +342,8 @@ pipeline {
           }
           when {
             anyOf {
-              branch 'master'
+              branch 'main'
+              branch 'master' // should be removed, but in case there is something going on...
               branch 'pr-jenkins' // for testing
             }
           }
@@ -350,7 +386,8 @@ pipeline {
           }
           when {
             anyOf {
-              branch 'master'
+              branch 'main'
+              branch 'master' // should be removed, but in case there is something going on...
               branch 'pr-jenkins' // for testing
             }
           }
@@ -373,7 +410,8 @@ pipeline {
           }
           when {
             anyOf {
-              branch 'master'
+              branch 'main'
+              branch 'master' // should be removed, but in case there is something going on...
               branch 'pr-jenkins' // for testing
             }
           }

@@ -102,7 +102,10 @@ void VehicleOpticalFlow::Run()
 	ParametersUpdate();
 
 	UpdateDistanceSensor();
-	UpdateSensorGyro();
+
+	if (!_delta_angle_available) {
+		UpdateSensorGyro();
+	}
 
 	sensor_optical_flow_s sensor_optical_flow;
 
@@ -129,8 +132,11 @@ void VehicleOpticalFlow::Run()
 		   ) {
 			// passthrough integrated gyro if available
 			_delta_angle += _flow_rotation * Vector3f{sensor_optical_flow.delta_angle};
+			_delta_angle_available = true;
 
 		} else {
+			_delta_angle_available = false;
+
 			// integrate synchronized gyro
 			gyroSample gyro_sample;
 
@@ -429,15 +435,21 @@ void VehicleOpticalFlow::UpdateSensorGyro()
 	}
 
 	// buffer
-	while (_sensor_gyro_sub.updated()) {
-		const unsigned last_generation = _sensor_gyro_sub.get_last_generation();
+	bool sensor_gyro_lost_printed = false;
+	int gyro_updates = 0;
 
+	while (_sensor_gyro_sub.updated() && (gyro_updates < sensor_gyro_s::ORB_QUEUE_LENGTH)) {
+		gyro_updates++;
+		const unsigned last_generation = _sensor_gyro_sub.get_last_generation();
 		sensor_gyro_s sensor_gyro;
 
 		if (_sensor_gyro_sub.copy(&sensor_gyro)) {
 
 			if (_sensor_gyro_sub.get_last_generation() != last_generation + 1) {
-				PX4_ERR("sensor_gyro lost, generation %u -> %u", last_generation, _sensor_gyro_sub.get_last_generation());
+				if (!sensor_gyro_lost_printed) {
+					PX4_ERR("sensor_gyro lost, generation %u -> %u", last_generation, _sensor_gyro_sub.get_last_generation());
+					sensor_gyro_lost_printed = true;
+				}
 			}
 
 			_gyro_calibration.set_device_id(sensor_gyro.device_id);

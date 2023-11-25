@@ -2,7 +2,7 @@
 
 set -e
 
-## Bash script to setup PX4 development environment on Ubuntu LTS (20.04, 18.04, 16.04).
+## Bash script to setup PX4 development environment on Ubuntu LTS (22.04, 20.04, 18.04).
 ## Can also be used in docker.
 ##
 ## Installs:
@@ -16,6 +16,7 @@ set -e
 INSTALL_NUTTX="true"
 INSTALL_SIM="true"
 INSTALL_ARCH=`uname -m`
+INSTALL_SIM_JAMMY="false"
 
 # Parse arguments
 for arg in "$@"
@@ -26,6 +27,10 @@ do
 
 	if [[ $arg == "--no-sim-tools" ]]; then
 		INSTALL_SIM="false"
+	fi
+
+	if [[ $arg == "--sim_jammy" ]]; then
+		INSTALL_SIM_JAMMY="true"
 	fi
 
 done
@@ -67,6 +72,10 @@ elif [[ "${UBUNTU_RELEASE}" == "18.04" ]]; then
 	echo "Ubuntu 18.04"
 elif [[ "${UBUNTU_RELEASE}" == "20.04" ]]; then
 	echo "Ubuntu 20.04"
+elif [[ "${UBUNTU_RELEASE}" == "22.04" ]]; then
+	echo "Ubuntu 22.04, simulation build off by default." 
+	echo "Use --sim_jammy to enable simulation build."
+	INSTALL_SIM=$INSTALL_SIM_JAMMY
 fi
 
 
@@ -104,7 +113,7 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get -y --quiet --no-install-recommends i
 echo
 echo "Installing PX4 Python3 dependencies"
 if [ -n "$VIRTUAL_ENV" ]; then
-	# virtual envrionments don't allow --user option
+	# virtual environments don't allow --user option
 	python -m pip install -r ${DIR}/requirements.txt
 else
 	# older versions of Ubuntu require --user option
@@ -146,7 +155,7 @@ if [[ $INSTALL_NUTTX == "true" ]]; then
 		util-linux \
 		vim-common \
 		;
-	if [[ "${UBUNTU_RELEASE}" == "20.04" ]]; then
+	if [[ "${UBUNTU_RELEASE}" == "20.04" || "${UBUNTU_RELEASE}" == "22.04" ]]; then
 		sudo DEBIAN_FRONTEND=noninteractive apt-get -y --quiet --no-install-recommends install \
 		kconfig-frontends \
 		;

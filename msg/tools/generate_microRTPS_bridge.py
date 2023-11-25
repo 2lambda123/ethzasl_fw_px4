@@ -206,9 +206,20 @@ if not ros2_distro:
     fastrtps_version = subprocess.check_output(
         "ldconfig -v 2>/dev/null | grep libfastrtps", shell=True).decode("utf-8").strip().split('so.')[-1]
 else:
-    # grab the version of the ros-<ros_distro>-fastrtps package
-    fastrtps_version = re.search(r'Version:\s*([\dd.]+)', subprocess.check_output(
-        "dpkg -s ros-" + ros2_distro + "-fastrtps 2>/dev/null | grep -i version", shell=True).decode("utf-8").strip()).group(1)
+    try:
+        # grab the version of the ros-<ros_distro>-fastrtps package
+        fastrtps_version = re.search(r'Version:\s*([\dd.]+)', subprocess.check_output(
+            "dpkg -s ros-" + ros2_distro + "-fastrtps 2>/dev/null | grep -i version", shell=True).decode("utf-8").strip()).group(1)
+    except subprocess.CalledProcessError:
+        # if ROS2 was installed from sources the command above fails, get the system-wide version instead
+        try:
+            fastrtps_version = subprocess.check_output(
+                "ldconfig -v 2>/dev/null | grep libfastrtps", shell=True).decode("utf-8").strip().split('so.')[-1]
+        except subprocess.CalledProcessError:
+            # if no system-wide version is found, look for the one provided by the source-installed ROS2
+            fastrtps_path = re.search(r'(?!\:)[^\:]*fastrtps\/lib(?=\:)', os.environ.get('LD_LIBRARY_PATH')).group(0)
+            fastrtps_version = subprocess.check_output(
+                "ls " + fastrtps_path, shell=True).decode("utf-8").strip().split('so.')[-1]
 
 
 # If nothing specified it's generated both
@@ -354,7 +365,7 @@ def generate_agent(out_dir):
     # the '-typeros2' option in fastrtpsgen.
     # .. note:: This is only available in FastRTPSGen 1.0.4 and above
     gen_ros2_typename = ""
-    if ros2_distro and ros2_distro in ['dashing', 'eloquent', 'foxy', 'galactic', 'rolling'] and fastrtpsgen_version >= version.Version("1.0.4"):
+    if ros2_distro and ros2_distro in ['dashing', 'eloquent', 'foxy', 'galactic', 'humble', 'rolling'] and fastrtpsgen_version >= version.Version("1.0.4"):
         gen_ros2_typename = "-typeros2 "
 
     idl_files = []

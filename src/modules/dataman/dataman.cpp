@@ -50,6 +50,7 @@
 #include <drivers/drv_hrt.h>
 #include <lib/parameters/param.h>
 #include <lib/perf/perf_counter.h>
+#include <stdlib.h>
 
 #include "dataman.h"
 
@@ -57,7 +58,7 @@ __BEGIN_DECLS
 __EXPORT int dataman_main(int argc, char *argv[]);
 __END_DECLS
 
-static constexpr int TASK_STACK_SIZE = 1220;
+static constexpr int TASK_STACK_SIZE = 1320;
 
 /* Private File based Operations */
 static ssize_t _file_write(dm_item_t item, unsigned index, const void *buf, size_t count);

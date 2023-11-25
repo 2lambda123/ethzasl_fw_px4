@@ -43,21 +43,22 @@ void Ekf::controlFakePosFusion()
 	auto &fake_pos = _aid_src_fake_pos;
 
 	// clear
-	resetEstimatorAidStatusFlags(fake_pos);
+	resetEstimatorAidStatus(fake_pos);
 
 	// If we aren't doing any aiding, fake position measurements at the last known position to constrain drift
 	// During intial tilt aligment, fake position is used to perform a "quasi-stationary" leveling of the EKF
-	const bool fake_pos_data_ready = isTimedOut(fake_pos.time_last_fuse[0], (uint64_t)2e5); // Fuse fake position at a limited rate
+	const bool fake_pos_data_ready = isTimedOut(fake_pos.time_last_fuse, (uint64_t)2e5); // Fuse fake position at a limited rate
 
 	if (fake_pos_data_ready) {
 		const bool continuing_conditions_passing = !isHorizontalAidingActive();
-		const bool starting_conditions_passing = continuing_conditions_passing;
+		const bool starting_conditions_passing = continuing_conditions_passing
+							 && _horizontal_deadreckon_time_exceeded;
 
-		if (_using_synthetic_position) {
+		if (_control_status.flags.fake_pos) {
 			if (continuing_conditions_passing) {
 				fuseFakePosition();
 
-				const bool is_fusion_failing = isTimedOut(fake_pos.time_last_fuse[0], (uint64_t)4e5);
+				const bool is_fusion_failing = isTimedOut(fake_pos.time_last_fuse, (uint64_t)4e5);
 
 				if (is_fusion_failing) {
 					resetFakePosFusion();
@@ -78,14 +79,17 @@ void Ekf::controlFakePosFusion()
 				}
 			}
 		}
+
+	} else if (_control_status.flags.fake_pos && isHorizontalAidingActive()) {
+		stopFakePosFusion();
 	}
 }
 
 void Ekf::startFakePosFusion()
 {
-	if (!_using_synthetic_position) {
+	if (!_control_status.flags.fake_pos) {
 		ECL_INFO("start fake position fusion");
-		_using_synthetic_position = true;
+		_control_status.flags.fake_pos = true;
 		_fuse_hpos_as_odom = false; // TODO: needed?
 		resetFakePosFusion();
 	}
@@ -94,20 +98,19 @@ void Ekf::startFakePosFusion()
 void Ekf::resetFakePosFusion()
 {
 	ECL_INFO("reset fake position fusion");
-	_last_known_posNE = _state.pos.xy();
+	_last_known_pos.xy() = _state.pos.xy();
 
 	resetHorizontalPositionToLastKnown();
 	resetHorizontalVelocityToZero();
 
-	_aid_src_fake_pos.time_last_fuse[0] = _time_last_imu;
-	_aid_src_fake_pos.time_last_fuse[1] = _time_last_imu;
+	_aid_src_fake_pos.time_last_fuse = _imu_sample_delayed.time_us;
 }
 
 void Ekf::stopFakePosFusion()
 {
-	if (_using_synthetic_position) {
+	if (_control_status.flags.fake_pos) {
 		ECL_INFO("stop fake position fusion");
-		_using_synthetic_position = false;
+		_control_status.flags.fake_pos = false;
 
 		resetEstimatorAidStatus(_aid_src_fake_pos);
 	}
@@ -134,27 +137,36 @@ void Ekf::fuseFakePosition()
 	auto &fake_pos = _aid_src_fake_pos;
 
 	for (int i = 0; i < 2; i++) {
-		fake_pos.observation[i] = _last_known_posNE(i);
+		fake_pos.observation[i] = _last_known_pos(i);
 		fake_pos.observation_variance[i] = obs_var(i);
 
-		fake_pos.innovation[i] = _state.pos(i) - _last_known_posNE(i);
+		fake_pos.innovation[i] = _state.pos(i) - _last_known_pos(i);
 		fake_pos.innovation_variance[i] = P(7 + i, 7 + i) + obs_var(i);
 	}
 
 	setEstimatorAidStatusTestRatio(fake_pos, innov_gate);
 
-	// fuse
-	for (int i = 0; i < 2; i++) {
-		// always protect against extreme values that could result in a NaN
-		fake_pos.fusion_enabled[i] = fake_pos.test_ratio[i] < sq(100.0f / innov_gate);
+	fake_pos.fusion_enabled = true;
 
-		if (fake_pos.fusion_enabled[i] && !fake_pos.innovation_rejected[i]) {
-			if (fuseVelPosHeight(fake_pos.innovation[i], fake_pos.innovation_variance[i], 3 + i)) {
-				fake_pos.fused[i] = true;
-				fake_pos.time_last_fuse[i] = _time_last_imu;
-			}
+	// always protect against extreme values that could result in a NaN
+	if (!fake_pos.innovation_rejected) {
+		if ((fake_pos.test_ratio[0] > sq(100.0f / innov_gate)) || (fake_pos.test_ratio[1] > sq(100.0f / innov_gate))) {
+			fake_pos.innovation_rejected = true;
 		}
 	}
 
-	fake_pos.timestamp_sample = _time_last_imu;
+	// fuse
+	if (fake_pos.fusion_enabled && !fake_pos.innovation_rejected) {
+		if (fuseVelPosHeight(fake_pos.innovation[0], fake_pos.innovation_variance[0], 3)
+		    && fuseVelPosHeight(fake_pos.innovation[1], fake_pos.innovation_variance[1], 4)
+		   ) {
+			fake_pos.fused = true;
+			fake_pos.time_last_fuse = _imu_sample_delayed.time_us;
+
+		} else {
+			fake_pos.fused = false;
+		}
+	}
+
+	fake_pos.timestamp_sample = _imu_sample_delayed.time_us;
 }

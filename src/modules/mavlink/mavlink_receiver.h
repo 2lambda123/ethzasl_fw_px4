@@ -33,7 +33,9 @@
 
 /**
  * @file mavlink_receiver.h
- * MAVLink receiver thread
+ *
+ * MAVLink receiver thread that converts the received MAVLink messages to the appropriate
+ * uORB topic publications, to decouple the uORB message and MAVLink message.
  *
  * @author Lorenz Meier <lorenz@px4.io>
  * @author Anton Babushkin <anton@px4.io>
@@ -104,7 +106,6 @@
 #include <uORB/topics/vehicle_global_position.h>
 #include <uORB/topics/vehicle_land_detected.h>
 #include <uORB/topics/vehicle_local_position.h>
-#include <uORB/topics/vehicle_local_position_setpoint.h>
 #include <uORB/topics/vehicle_odometry.h>
 #include <uORB/topics/vehicle_rates_setpoint.h>
 #include <uORB/topics/vehicle_status.h>
@@ -288,7 +289,7 @@ private:
 	uint16_t _mavlink_status_last_packet_rx_drop_count{0};
 
 	// ORB publications
-	uORB::Publication<actuator_controls_s>			_actuator_controls_pubs[4] {ORB_ID(actuator_controls_0), ORB_ID(actuator_controls_1), ORB_ID(actuator_controls_2), ORB_ID(actuator_controls_3)};
+	uORB::Publication<actuator_controls_s>			_actuator_controls_pubs[3] {ORB_ID(actuator_controls_0), ORB_ID(actuator_controls_1), ORB_ID(actuator_controls_2)};
 	uORB::Publication<airspeed_s>				_airspeed_pub{ORB_ID(airspeed)};
 	uORB::Publication<battery_status_s>			_battery_pub{ORB_ID(battery_status)};
 	uORB::Publication<camera_status_s>			_camera_status_pub{ORB_ID(camera_status)};
@@ -330,6 +331,7 @@ private:
 
 	// ORB publications (multi)
 	uORB::PublicationMulti<distance_sensor_s>		_distance_sensor_pub{ORB_ID(distance_sensor)};
+	uORB::PublicationMulti<gps_inject_data_s>		_gps_inject_data_pub{ORB_ID(gps_inject_data)};
 	uORB::PublicationMulti<input_rc_s>			_rc_pub{ORB_ID(input_rc)};
 	uORB::PublicationMulti<manual_control_setpoint_s>	_manual_control_input_pub{ORB_ID(manual_control_input)};
 	uORB::PublicationMulti<ping_s>				_ping_pub{ORB_ID(ping)};
@@ -339,7 +341,6 @@ private:
 	uORB::PublicationMulti<sensor_optical_flow_s>         _sensor_optical_flow_pub{ORB_ID(sensor_optical_flow)};
 
 	// ORB publications (queue length > 1)
-	uORB::Publication<gps_inject_data_s>     _gps_inject_data_pub{ORB_ID(gps_inject_data)};
 	uORB::Publication<transponder_report_s>  _transponder_report_pub{ORB_ID(transponder_report)};
 	uORB::Publication<vehicle_command_s>     _cmd_pub{ORB_ID(vehicle_command)};
 	uORB::Publication<vehicle_command_ack_s> _cmd_ack_pub{ORB_ID(vehicle_command_ack)};
@@ -351,7 +352,6 @@ private:
 	uORB::Subscription	_vehicle_local_position_sub{ORB_ID(vehicle_local_position)};
 	uORB::Subscription	_vehicle_global_position_sub{ORB_ID(vehicle_global_position)};
 	uORB::Subscription	_vehicle_status_sub{ORB_ID(vehicle_status)};
-	uORB::Subscription 	_actuator_controls_3_sub{ORB_ID(actuator_controls_3)};
 	uORB::Subscription	_autotune_attitude_control_status_sub{ORB_ID(autotune_attitude_control_status)};
 
 	uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
@@ -385,6 +385,7 @@ private:
 	hrt_abstime _heartbeat_type_adsb{0};
 	hrt_abstime _heartbeat_type_camera{0};
 	hrt_abstime _heartbeat_type_parachute{0};
+	hrt_abstime _heartbeat_type_open_drone_id{0};
 
 	hrt_abstime _heartbeat_component_telemetry_radio{0};
 	hrt_abstime _heartbeat_component_log{0};

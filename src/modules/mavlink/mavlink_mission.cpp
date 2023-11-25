@@ -486,7 +486,7 @@ MavlinkMissionManager::send()
 
 			_current_seq = mission_result.seq_current;
 
-			PX4_DEBUG("WPM: got mission result, new current_seq: %u", _current_seq);
+			PX4_DEBUG("WPM: got mission result, new current_seq: %ld", _current_seq);
 
 			if (mission_result.seq_total > 0) {
 				if (mission_result.seq_current < mission_result.seq_total) {
@@ -505,7 +505,7 @@ MavlinkMissionManager::send()
 			_last_reached = mission_result.seq_reached;
 			_reached_sent_count = 0;
 
-			PX4_DEBUG("WPM: got mission result, new seq_reached: %d", _last_reached);
+			PX4_DEBUG("WPM: got mission result, new seq_reached: %ld", _last_reached);
 
 			if ((mission_result.seq_total > 0) && (_last_reached >= 0)) {
 				send_mission_item_reached((uint16_t)_last_reached);
@@ -551,7 +551,7 @@ MavlinkMissionManager::send()
 		events::send(events::ID("mavlink_mission_op_timeout"), events::Log::Error,
 			     "Operation timeout, aborting transfer");
 
-		PX4_DEBUG("WPM: Last operation (state=%u) timed out, changing state to MAVLINK_WPM_STATE_IDLE", _state);
+		PX4_DEBUG("WPM: Last operation (state=%d) timed out, changing state to MAVLINK_WPM_STATE_IDLE", _state);
 
 		switch_to_idle_state();
 
@@ -1054,7 +1054,7 @@ MavlinkMissionManager::handle_mission_item_both(const mavlink_message_t *msg)
 	if (CHECK_SYSID_COMPID_MISSION(wp)) {
 
 		if (wp.mission_type != _mission_type) {
-			PX4_WARN("WPM: Unexpected mission type (%u %u)", (int)wp.mission_type, (int)_mission_type);
+			PX4_WARN("WPM: Unexpected mission type (%d %d)", (int)wp.mission_type, (int)_mission_type);
 			send_mission_ack(_transfer_partner_sysid, _transfer_partner_compid, MAV_MISSION_ERROR);
 			return;
 		}
@@ -1219,7 +1219,7 @@ MavlinkMissionManager::handle_mission_item_both(const mavlink_message_t *msg)
 
 		if (_transfer_seq == _transfer_count) {
 			/* got all new mission items successfully */
-			PX4_DEBUG("WPM: MISSION_ITEM got all %u items, current_seq=%u, changing state to MAVLINK_WPM_STATE_IDLE",
+			PX4_DEBUG("WPM: MISSION_ITEM got all %u items, current_seq=%ld, changing state to MAVLINK_WPM_STATE_IDLE",
 				  _transfer_count, _transfer_current_seq);
 
 			ret = 0;
@@ -1331,6 +1331,7 @@ MavlinkMissionManager::parse_mavlink_mission_item(const mavlink_mission_item_t *
 	    mavlink_mission_item->frame == MAV_FRAME_GLOBAL_RELATIVE_ALT ||
 	    (_int_mode && (mavlink_mission_item->frame == MAV_FRAME_GLOBAL_INT ||
 			   mavlink_mission_item->frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT))) {
+		// This is a mission item with a global coordinate
 
 		// Switch to int mode if that is what we are receiving
 		if ((mavlink_mission_item->frame == MAV_FRAME_GLOBAL_INT ||
@@ -1363,6 +1364,8 @@ MavlinkMissionManager::parse_mavlink_mission_item(const mavlink_mission_item_t *
 			mission_item->altitude_is_relative = true;
 		}
 
+		// Depending on the received MAV_CMD_* (MAVLink Commands), assign the corresponding
+		// NAV_CMD value to the mission item's nav_cmd.
 		switch (mavlink_mission_item->command) {
 		case MAV_CMD_NAV_WAYPOINT:
 			mission_item->nav_cmd = NAV_CMD_WAYPOINT;
@@ -1438,11 +1441,11 @@ MavlinkMissionManager::parse_mavlink_mission_item(const mavlink_mission_item_t *
 			break;
 
 		case MAV_CMD_CONDITION_GATE:
-			mission_item->nav_cmd = (NAV_CMD)mavlink_mission_item->command;
+			mission_item->nav_cmd = NAV_CMD_CONDITION_GATE;
 			break;
 
 		case MAV_CMD_NAV_FENCE_RETURN_POINT:
-			mission_item->nav_cmd = (NAV_CMD)mavlink_mission_item->command;
+			mission_item->nav_cmd = NAV_CMD_FENCE_RETURN_POINT;
 			break;
 
 		case MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION:
@@ -1463,7 +1466,6 @@ MavlinkMissionManager::parse_mavlink_mission_item(const mavlink_mission_item_t *
 
 		default:
 			mission_item->nav_cmd = NAV_CMD_INVALID;
-
 			PX4_DEBUG("Unsupported command %d", mavlink_mission_item->command);
 
 			return MAV_MISSION_UNSUPPORTED;
@@ -1473,7 +1475,7 @@ MavlinkMissionManager::parse_mavlink_mission_item(const mavlink_mission_item_t *
 
 	} else if (mavlink_mission_item->frame == MAV_FRAME_MISSION) {
 
-		// this is a mission item with no coordinates
+		// This is a mission item with no coordinates
 
 		mission_item->params[0] = mavlink_mission_item->param1;
 		mission_item->params[1] = mavlink_mission_item->param2;
@@ -1517,6 +1519,12 @@ MavlinkMissionManager::parse_mavlink_mission_item(const mavlink_mission_item_t *
 			}
 			break;
 
+		case MAV_CMD_DO_WINCH:
+		case MAV_CMD_DO_GRIPPER:
+			mission_item->nav_cmd = mavlink_mission_item->command;
+			MavlinkMissionManager::copy_params_from_mavlink_to_mission_item(mission_item, mavlink_mission_item, 1, 2);
+			break;
+
 		case MAV_CMD_DO_CHANGE_SPEED:
 		case MAV_CMD_DO_SET_HOME:
 		case MAV_CMD_DO_SET_SERVO:
@@ -1545,6 +1553,7 @@ MavlinkMissionManager::parse_mavlink_mission_item(const mavlink_mission_item_t *
 		case MAV_CMD_DO_SET_ROI_NONE:
 		case MAV_CMD_CONDITION_DELAY:
 		case MAV_CMD_CONDITION_DISTANCE:
+		case MAV_CMD_DO_SET_ACTUATOR:
 			mission_item->nav_cmd = (NAV_CMD)mavlink_mission_item->command;
 			break;
 
@@ -1748,6 +1757,39 @@ MavlinkMissionManager::format_mavlink_mission_item(const struct mission_item_s *
 	return PX4_OK;
 }
 
+void MavlinkMissionManager::copy_params_from_mavlink_to_mission_item(struct mission_item_s *mission_item,
+		const mavlink_mission_item_t *mavlink_mission_item, int8_t start_idx, int8_t end_idx)
+{
+	// Copy each param1 ~ 7 if they are within the range specified
+	if (start_idx <= 1 && 1 <= end_idx) {
+		mission_item->params[0] = mavlink_mission_item->param1;
+	}
+
+	if (start_idx <= 2 && 2 <= end_idx) {
+		mission_item->params[1] = mavlink_mission_item->param2;
+	}
+
+	if (start_idx <= 3 && 3 <= end_idx) {
+		mission_item->params[2] = mavlink_mission_item->param3;
+	}
+
+	if (start_idx <= 4 && 4 <= end_idx) {
+		mission_item->params[3] = mavlink_mission_item->param4;
+	}
+
+	/* Param5, 6 and 7 are named x, y and z since it is used as position coordinates as well */
+	if (start_idx <= 5 && 5 <= end_idx) {
+		mission_item->params[4] = mavlink_mission_item->x;
+	}
+
+	if (start_idx <= 6 && 6 <= end_idx) {
+		mission_item->params[5] = mavlink_mission_item->y;
+	}
+
+	if (start_idx <= 7 && 7 <= end_idx) {
+		mission_item->params[6] = mavlink_mission_item->z;
+	}
+}
 
 void MavlinkMissionManager::check_active_mission()
 {

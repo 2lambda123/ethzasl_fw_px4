@@ -54,8 +54,6 @@ Tailsitter::Tailsitter(VtolAttitudeControl *attc) :
 {
 	_vtol_schedule.flight_mode = vtol_mode::MC_MODE;
 	_vtol_schedule.transition_start = 0;
-
-	_flag_was_in_trans_mode = false;
 }
 
 void
@@ -190,7 +188,13 @@ void Tailsitter::update_vtol_state()
 
 void Tailsitter::update_transition_state()
 {
-	const float time_since_trans_start = (float)(hrt_absolute_time() - _vtol_schedule.transition_start) * 1e-6f;
+	const hrt_abstime now = hrt_absolute_time();
+	const float time_since_trans_start = (float)(now - _vtol_schedule.transition_start) * 1e-6f;
+
+	// we need the incoming (virtual) mc attitude setpoints to be recent, otherwise return (means the previous setpoint stays active)
+	if (_mc_virtual_att_sp->timestamp < (now - 1_s)) {
+		return;
+	}
 
 	if (!_flag_was_in_trans_mode) {
 		_flag_was_in_trans_mode = true;
@@ -205,8 +209,15 @@ void Tailsitter::update_transition_state()
 			float yaw_sp = atan2f(z(1), z(0));
 
 			// the intial attitude setpoint for a backtransition is a combination of the current fw pitch setpoint,
-			// the yaw setpoint and zero roll since we want wings level transition
-			_q_trans_start = Eulerf(0.0f, _fw_virtual_att_sp->pitch_body, yaw_sp);
+			// the yaw setpoint and zero roll since we want wings level transition.
+			// If for some reason the fw attitude setpoint is not recent then don't sue it and assume 0 pitch
+			if (_fw_virtual_att_sp->timestamp > (now - 1_s)) {
+				_q_trans_start = Eulerf(0.0f, _fw_virtual_att_sp->pitch_body, yaw_sp);
+
+			} else {
+				_q_trans_start = Eulerf(0.0f, 0.f, yaw_sp);
+			}
+
 
 			// attitude during transitions are controlled by mc attitude control so rotate the desired attitude to the
 			// multirotor frame
@@ -254,10 +265,6 @@ void Tailsitter::update_transition_state()
 
 		// calculate pitching rate - and constrain to at least 0.1s transition time
 		const float trans_pitch_rate = M_PI_2_F / math::max(_param_vt_b_trans_dur.get(), 0.1f);
-
-		if (!_flag_idle_mc) {
-			_flag_idle_mc = set_idle_mc();
-		}
 
 		if (tilt > 0.01f) {
 			_q_trans_sp = Quatf(AxisAnglef(_trans_rot_axis,

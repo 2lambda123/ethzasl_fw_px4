@@ -41,15 +41,8 @@
 #include <uORB/topics/uORBTopics.hpp> // For ORB_ID enum
 #include <stdint.h>
 
-#ifdef __PX4_NUTTX
-#include "ORBSet.hpp"
-#else
-#include <string>
-#include <set>
-#define ORBSet std::set<std::string>
-#endif
-
 #ifdef ORB_COMMUNICATOR
+#include "ORBSet.hpp"
 #include "uORBCommunicator.hpp"
 #endif /* ORB_COMMUNICATOR */
 
@@ -409,7 +402,7 @@ public:
 	 * @param instance  ORB instance
 	 * @return    OK if the topic exists, PX4_ERROR otherwise.
 	 */
-	static int  orb_exists(const struct orb_metadata *meta, int instance);
+	int  orb_exists(const struct orb_metadata *meta, int instance);
 
 	/**
 	 * Set the minimum interval between which updates are seen for a subscription.

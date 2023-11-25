@@ -135,7 +135,7 @@ void VtolAttitudeControl::vehicle_cmd_poll()
 			vehicle_status_s vehicle_status{};
 			_vehicle_status_sub.copy(&vehicle_status);
 
-			uint8_t result = vehicle_command_ack_s::VEHICLE_RESULT_ACCEPTED;
+			uint8_t result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
 
 			const int transition_command_param1 = int(vehicle_command.param1 + 0.5f);
 
@@ -146,7 +146,7 @@ void VtolAttitudeControl::vehicle_cmd_poll()
 			     || vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_RTL
 			     ||  vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_ORBIT)) {
 
-				result = vehicle_command_ack_s::VEHICLE_RESULT_TEMPORARILY_REJECTED;
+				result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_TEMPORARILY_REJECTED;
 
 			} else {
 				_transition_command = transition_command_param1;
@@ -331,7 +331,7 @@ VtolAttitudeControl::Run()
 			// vehicle is doing a transition to FW
 			_vtol_vehicle_status.vehicle_vtol_state = vtol_vehicle_status_s::VEHICLE_VTOL_STATE_TRANSITION_TO_FW;
 
-			if (!_vtol_type->was_in_trans_mode() || mc_att_sp_updated || fw_att_sp_updated) {
+			if (mc_att_sp_updated || fw_att_sp_updated) {
 				_vtol_type->update_transition_state();
 				_vehicle_attitude_sp_pub.publish(_vehicle_attitude_sp);
 			}
@@ -342,7 +342,7 @@ VtolAttitudeControl::Run()
 			// vehicle is doing a transition to MC
 			_vtol_vehicle_status.vehicle_vtol_state = vtol_vehicle_status_s::VEHICLE_VTOL_STATE_TRANSITION_TO_MC;
 
-			if (!_vtol_type->was_in_trans_mode() || mc_att_sp_updated || fw_att_sp_updated) {
+			if (mc_att_sp_updated || fw_att_sp_updated) {
 				_vtol_type->update_transition_state();
 				_vehicle_attitude_sp_pub.publish(_vehicle_attitude_sp);
 			}

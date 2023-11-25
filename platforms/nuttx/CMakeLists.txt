@@ -175,7 +175,6 @@ if (NOT CONFIG_BUILD_FLAT)
 		-Wl,--start-group
 			${nuttx_libs}
 			${kernel_module_libraries}
-			px4_work_queue # TODO, this shouldn't be needed here?
 		-Wl,--end-group
 
 		m
@@ -414,6 +413,9 @@ if(NOT NUTTX_DIR MATCHES "external")
 	elseif(CONFIG_ARCH_CHIP_STM32F777NI)
 		set(DEBUG_DEVICE "STM32F777NI")
 		set(DEBUG_SVD_FILE "STM32F7x7.svd")
+	elseif(CONFIG_ARCH_CHIP_STM32H743VI)
+		set(DEBUG_DEVICE "STM32H743VI")
+		set(DEBUG_SVD_FILE "STM32H7x3.svd")
 	elseif(CONFIG_ARCH_CHIP_STM32H743II)
 		set(DEBUG_DEVICE "STM32H743II")
 		set(DEBUG_SVD_FILE "STM32H7x3.svd")

@@ -129,57 +129,59 @@ else
 	BUILD_DIR_SUFFIX :=
 endif
 
+CMAKE_ARGS ?=
+
 # additional config parameters passed to cmake
 ifdef EXTERNAL_MODULES_LOCATION
-	CMAKE_ARGS += -DEXTERNAL_MODULES_LOCATION:STRING=$(EXTERNAL_MODULES_LOCATION)
+	override CMAKE_ARGS += -DEXTERNAL_MODULES_LOCATION:STRING=$(EXTERNAL_MODULES_LOCATION)
 endif
 
 ifdef PX4_CMAKE_BUILD_TYPE
-	CMAKE_ARGS += -DCMAKE_BUILD_TYPE=${PX4_CMAKE_BUILD_TYPE}
+	override CMAKE_ARGS += -DCMAKE_BUILD_TYPE=${PX4_CMAKE_BUILD_TYPE}
 else
 
 	# Address Sanitizer
 	ifdef PX4_ASAN
-		CMAKE_ARGS += -DCMAKE_BUILD_TYPE=AddressSanitizer
+		override CMAKE_ARGS += -DCMAKE_BUILD_TYPE=AddressSanitizer
 	endif
 
 	# Memory Sanitizer
 	ifdef PX4_MSAN
-		CMAKE_ARGS += -DCMAKE_BUILD_TYPE=MemorySanitizer
+		override CMAKE_ARGS += -DCMAKE_BUILD_TYPE=MemorySanitizer
 	endif
 
 	# Thread Sanitizer
 	ifdef PX4_TSAN
-		CMAKE_ARGS += -DCMAKE_BUILD_TYPE=ThreadSanitizer
+		override CMAKE_ARGS += -DCMAKE_BUILD_TYPE=ThreadSanitizer
 	endif
 
 	# Undefined Behavior Sanitizer
 	ifdef PX4_UBSAN
-		CMAKE_ARGS += -DCMAKE_BUILD_TYPE=UndefinedBehaviorSanitizer
+		override CMAKE_ARGS += -DCMAKE_BUILD_TYPE=UndefinedBehaviorSanitizer
 	endif
 
 	# Fuzz Testing
 	ifdef PX4_FUZZ
-		CMAKE_ARGS += -DCMAKE_BUILD_TYPE=FuzzTesting
+		override CMAKE_ARGS += -DCMAKE_BUILD_TYPE=FuzzTesting
 	endif
 
 endif
 
 # Pick up specific Python path if set
 ifdef PYTHON_EXECUTABLE
-	CMAKE_ARGS += -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
+	override CMAKE_ARGS += -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
 endif
 
 # Check if the microRTPS agent is to be built
 ifdef BUILD_MICRORTPS_AGENT
-  CMAKE_ARGS += -DBUILD_MICRORTPS_AGENT=ON
+  override CMAKE_ARGS += -DBUILD_MICRORTPS_AGENT=ON
 endif
 
 # Functions
 # --------------------------------------------------------------------
 # describe how to build a cmake config
 define cmake-build
-	$(eval CMAKE_ARGS += -DCONFIG=$(1))
+	$(eval override CMAKE_ARGS += -DCONFIG=$(1))
 	@$(eval BUILD_DIR = "$(SRC_DIR)/build/$(1)")
 	@# check if the desired cmake configuration matches the cache then CMAKE_CACHE_CHECK stays empty
 	@$(call cmake-cache-check)
@@ -314,10 +316,14 @@ uorb_graphs:
 	@$(MAKE) --no-print-directory px4_fmu-v5_default uorb_graph
 	@$(MAKE) --no-print-directory px4_sitl_default uorb_graph
 
-px4io_update: px4_io-v2_default cubepilot_io-v2_default
+px4io_update:
+	@$(MAKE) --no-print-directory px4_io-v2_default
+	@$(MAKE) --no-print-directory cubepilot_io-v2_default
 	# px4_io-v2_default
+	cp build/px4_io-v2_default/px4_io-v2_default.bin boards/ark/fmu-v6x/extras/px4_io-v2_default.bin
 	cp build/px4_io-v2_default/px4_io-v2_default.bin boards/holybro/durandal-v1/extras/px4_io-v2_default.bin
 	cp build/px4_io-v2_default/px4_io-v2_default.bin boards/holybro/pix32v5/extras/px4_io-v2_default.bin
+	cp build/px4_io-v2_default/px4_io-v2_default.bin boards/mro/x21/extras/px4_io-v2_default.bin
 	cp build/px4_io-v2_default/px4_io-v2_default.bin boards/mro/x21-777/extras/px4_io-v2_default.bin
 	cp build/px4_io-v2_default/px4_io-v2_default.bin boards/px4/fmu-v2/extras/px4_io-v2_default.bin
 	cp build/px4_io-v2_default/px4_io-v2_default.bin boards/px4/fmu-v3/extras/px4_io-v2_default.bin
@@ -331,7 +337,7 @@ px4io_update: px4_io-v2_default cubepilot_io-v2_default
 	cp build/cubepilot_io-v2_default/cubepilot_io-v2_default.bin boards/cubepilot/cubeyellow/extras/cubepilot_io-v2_default.bin
 	git status
 
-bootloaders_update: cuav_nora_bootloader cuav_x7pro_bootloader cubepilot_cubeorange_bootloader holybro_durandal-v1_bootloader holybro_kakuteh7_bootloader matek_h743_bootloader matek_h743-mini_bootloader matek_h743-slim_bootloader modalai_fc-v2_bootloader mro_ctrl-zero-classic_bootloader mro_ctrl-zero-h7_bootloader mro_ctrl-zero-h7-oem_bootloader mro_pixracerpro_bootloader px4_fmu-v6c_bootloader px4_fmu-v6u_bootloader px4_fmu-v6x_bootloader
+bootloaders_update: ark_fmu-v6x_bootloader cuav_nora_bootloader cuav_x7pro_bootloader cubepilot_cubeorange_bootloader holybro_durandal-v1_bootloader holybro_kakuteh7_bootloader matek_h743_bootloader matek_h743-mini_bootloader matek_h743-slim_bootloader modalai_fc-v2_bootloader mro_ctrl-zero-classic_bootloader mro_ctrl-zero-h7_bootloader mro_ctrl-zero-h7-oem_bootloader mro_pixracerpro_bootloader px4_fmu-v6c_bootloader px4_fmu-v6u_bootloader px4_fmu-v6x_bootloader
 	git status
 
 .PHONY: coverity_scan
@@ -381,7 +387,7 @@ format:
 .PHONY: rostest python_coverage
 
 tests:
-	$(eval CMAKE_ARGS += -DTESTFILTER=$(TESTFILTER))
+	$(eval override CMAKE_ARGS += -DTESTFILTER=$(TESTFILTER))
 	$(eval ARGS += test_results)
 	$(eval ASAN_OPTIONS += color=always:check_initialization_order=1:detect_stack_use_after_return=1)
 	$(eval UBSAN_OPTIONS += color=always)
@@ -569,3 +575,13 @@ update_px4_ros_com:
 
 update_px4_msgs:
 	@Tools/update_px4_ros2_bridge.sh --ws_dir ${ROS2_WS_DIR} --px4_msgs
+
+.PHONY: failsafe_web run_failsafe_web_server
+failsafe_web:
+	@if ! command -v emcc; then echo -e "Install emscripten first: https://emscripten.org/docs/getting_started/downloads.html\nAnd source the env: source <path>/emsdk_env.sh"; exit 1; fi
+	@$(MAKE) --no-print-directory px4_sitl_default failsafe_test parameters_xml \
+		PX4_CMAKE_BUILD_TYPE=Release BUILD_DIR_SUFFIX=_failsafe_web \
+		CMAKE_ARGS="-DCMAKE_CXX_COMPILER=em++ -DCMAKE_C_COMPILER=emcc"
+run_failsafe_web_server: failsafe_web
+	@cd build/px4_sitl_default_failsafe_web && \
+		python3 -m http.server

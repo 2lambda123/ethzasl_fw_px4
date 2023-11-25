@@ -36,7 +36,6 @@
 #include <px4_platform_common/sem.hpp>
 
 TAP_ESC::TAP_ESC(char const *const device, uint8_t channels_count):
-	CDev(TAP_ESC_DEVICE_PATH),
 	OutputModuleInterface(MODULE_NAME, px4::serial_port_to_wq(device)),
 	_mixing_output{"TAP_ESC", channels_count, *this, MixingOutput::SchedulingPolicy::Auto, true},
 	_channels_count(channels_count)
@@ -154,8 +153,7 @@ int TAP_ESC::init()
 		usleep(2000);
 	}
 
-	/* do regular cdev init */
-	return CDev::init();
+	return 0;
 }
 
 void TAP_ESC::send_esc_outputs(const uint16_t *pwm, const uint8_t motor_cnt)
@@ -337,8 +335,6 @@ void TAP_ESC::Run()
 		return;
 	}
 
-	SmartLock lock_guard(_lock);
-
 	// push backup schedule
 	ScheduleDelayed(20_ms);
 
@@ -413,33 +409,6 @@ void TAP_ESC::Run()
 	perf_end(_cycle_perf);
 }
 
-int TAP_ESC::ioctl(device::file_t *filp, int cmd, unsigned long arg)
-{
-	SmartLock lock_guard(_lock);
-
-	int ret = OK;
-
-	switch (cmd) {
-	case MIXERIOCRESET:
-		_mixing_output.resetMixer();
-		break;
-
-	case MIXERIOCLOADBUF: {
-			const char *buf = (const char *)arg;
-			unsigned buflen = strlen(buf);
-			ret = _mixing_output.loadMixer(buf, buflen);
-			break;
-		}
-
-
-	default:
-		ret = -ENOTTY;
-		break;
-	}
-
-	return ret;
-}
-
 int TAP_ESC::task_spawn(int argc, char *argv[])
 {
 	/* Parse arguments */
@@ -511,17 +480,22 @@ int TAP_ESC::print_usage(const char *reason)
 	PRINT_MODULE_DESCRIPTION(
 		R"DESCR_STR(
 ### Description
+
 This module controls the TAP_ESC hardware via UART. It listens on the
 actuator_controls topics, does the mixing and writes the PWM outputs.
 
 ### Implementation
-Currently the module is implementd as a threaded version only, meaning that it
+
+Currently the module is implemented as a threaded version only, meaning that it
 runs in its own thread instead of on the work queue.
 
 ### Example
-The module is typically started with:
-tap_esc start -d /dev/ttyS2 -n <1-8>
 
+The module is typically started with:
+
+```
+tap_esc start -d /dev/ttyS2 -n <1-8>
+```
 )DESCR_STR");
 
 	PRINT_MODULE_USAGE_NAME("tap_esc", "driver");

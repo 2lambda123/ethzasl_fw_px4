@@ -98,7 +98,6 @@ void Standard::update_vtol_state()
 			// in mc mode
 			_vtol_schedule.flight_mode = vtol_mode::MC_MODE;
 			mc_weight = 1.0f;
-			_pusher_throttle = 0.0f;
 			_reverse_output = 0.0f;
 
 		} else if (_vtol_schedule.flight_mode == vtol_mode::FW_MODE) {
@@ -204,18 +203,29 @@ void Standard::update_vtol_state()
 
 void Standard::update_transition_state()
 {
+	const hrt_abstime now = hrt_absolute_time();
 	float mc_weight = 1.0f;
-	float time_since_trans_start = (float)(hrt_absolute_time() - _vtol_schedule.transition_start) * 1e-6f;
+	const float time_since_trans_start = (float)(now - _vtol_schedule.transition_start) * 1e-6f;
 
 	VtolType::update_transition_state();
 
-	// we get attitude setpoint from a multirotor flighttask if altitude is controlled.
+	// we get attitude setpoint from a multirotor flighttask if climbrate is controlled.
 	// in any other case the fixed wing attitude controller publishes attitude setpoint from manual stick input.
 	if (_v_control_mode->flag_control_climb_rate_enabled) {
+		// we need the incoming (virtual) attitude setpoints (both mc and fw) to be recent, otherwise return (means the previous setpoint stays active)
+		if (_mc_virtual_att_sp->timestamp < (now - 1_s) || _fw_virtual_att_sp->timestamp < (now - 1_s)) {
+			return;
+		}
+
 		memcpy(_v_att_sp, _mc_virtual_att_sp, sizeof(vehicle_attitude_setpoint_s));
 		_v_att_sp->roll_body = _fw_virtual_att_sp->roll_body;
 
 	} else {
+		// we need a recent incoming (fw virtual) attitude setpoint, otherwise return (means the previous setpoint stays active)
+		if (_fw_virtual_att_sp->timestamp < (now - 1_s)) {
+			return;
+		}
+
 		memcpy(_v_att_sp, _fw_virtual_att_sp, sizeof(vehicle_attitude_setpoint_s));
 		_v_att_sp->thrust_body[2] = -_fw_virtual_att_sp->thrust_body[0];
 	}
@@ -290,13 +300,6 @@ void Standard::update_transition_state()
 		if (_param_vt_b_trans_ramp.get() > FLT_EPSILON) {
 			mc_weight = time_since_trans_start / _param_vt_b_trans_ramp.get();
 		}
-
-		set_all_motor_state(motor_state::ENABLED);
-
-		// set idle speed for MC actuators
-		if (!_flag_idle_mc) {
-			_flag_idle_mc = set_idle_mc();
-		}
 	}
 
 	mc_weight = math::constrain(mc_weight, 0.0f, 1.0f);
@@ -366,9 +369,9 @@ void Standard::fill_actuator_outputs()
 		mc_out[actuator_controls_s::INDEX_LANDING_GEAR] = landing_gear_s::GEAR_UP;
 
 		// FW out = FW in, with VTOL transition controlling throttle and airbrakes
-		fw_out[actuator_controls_s::INDEX_ROLL]         = fw_in[actuator_controls_s::INDEX_ROLL];
-		fw_out[actuator_controls_s::INDEX_PITCH]        = fw_in[actuator_controls_s::INDEX_PITCH];
-		fw_out[actuator_controls_s::INDEX_YAW]          = fw_in[actuator_controls_s::INDEX_YAW];
+		fw_out[actuator_controls_s::INDEX_ROLL]         = fw_in[actuator_controls_s::INDEX_ROLL] * (1.f - _mc_roll_weight);
+		fw_out[actuator_controls_s::INDEX_PITCH]        = fw_in[actuator_controls_s::INDEX_PITCH] * (1.f - _mc_pitch_weight);
+		fw_out[actuator_controls_s::INDEX_YAW]          = fw_in[actuator_controls_s::INDEX_YAW] * (1.f - _mc_yaw_weight);
 		fw_out[actuator_controls_s::INDEX_THROTTLE]     = _pusher_throttle;
 		fw_out[actuator_controls_s::INDEX_FLAPS]        = _flaps_setpoint_with_slewrate.getState();
 		fw_out[actuator_controls_s::INDEX_SPOILERS]    	= _spoiler_setpoint_with_slewrate.getState();

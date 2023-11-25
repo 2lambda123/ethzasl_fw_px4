@@ -140,41 +140,51 @@ bool VehicleMagnetometer::ParametersUpdate(bool force)
 
 			// update mag priority (CAL_MAGx_PRIO)
 			for (int mag = 0; mag < MAX_SENSOR_COUNT; mag++) {
+				bool clear_online_mag_cal = false;
+
 				const auto calibration_count = _calibration[mag].calibration_count();
 				const int32_t priority_old = _calibration[mag].priority();
 				_calibration[mag].ParametersUpdate();
 				const int32_t priority_new = _calibration[mag].priority();
 
-				if (priority_old != priority_new) {
-					if (_priority[mag] == priority_old) {
-						_priority[mag] = priority_new;
+				if (_calibration[mag].enabled()) {
+					if (priority_old != priority_new) {
+						if (_priority[mag] == priority_old) {
+							_priority[mag] = priority_new;
 
-					} else {
-						// change relative priority to incorporate any sensor faults
-						int priority_change = priority_new - priority_old;
-						_priority[mag] = math::constrain(_priority[mag] + priority_change, 1, 100);
+						} else {
+							// change relative priority to incorporate any sensor faults
+							int priority_change = priority_new - priority_old;
+							_priority[mag] = math::constrain(_priority[mag] + priority_change, 1, 100);
+						}
 					}
+
+					if (calibration_count != _calibration[mag].calibration_count()) {
+						calibration_updated = true;
+						clear_online_mag_cal = true;
+					}
+
+				} else {
+					_priority[mag] = 0;
+					clear_online_mag_cal = true;
 				}
 
-				if (calibration_count != _calibration[mag].calibration_count()) {
-					calibration_updated = true;
+				if (clear_online_mag_cal) {
+					// clear any mag bias estimate
+					_calibration_estimator_bias[mag].zero();
+
+					for (auto &cal : _mag_cal) {
+						// clear any in flight mag calibration
+						if (cal.device_id == _calibration[mag].device_id()) {
+							cal = {};
+						}
+					}
 				}
 			}
 
 			if (calibration_updated) {
-				// clear all
-				for (auto &bias : _calibration_estimator_bias) {
-					bias.zero();
-				}
-
-				for (auto &cal : _mag_cal) {
-					cal = {};
-				}
-
-				_in_flight_mag_cal_available = false;
 				_last_calibration_update = hrt_absolute_time();
 			}
-
 		}
 
 		return true;
@@ -244,7 +254,7 @@ void VehicleMagnetometer::UpdateMagCalibration()
 	// Larger values cause a larger fraction of the learned biases to be used.
 	static constexpr float magb_vref = 2.5e-7f;
 	static constexpr float min_var_allowed = magb_vref * 0.01f;
-	static constexpr float max_var_allowed = magb_vref * 100.f;
+	static constexpr float max_var_allowed = magb_vref * 500.f;
 
 	if (_armed) {
 		static constexpr uint8_t mag_cal_size = sizeof(_mag_cal) / sizeof(_mag_cal[0]);
@@ -321,21 +331,22 @@ void VehicleMagnetometer::UpdateMagCalibration()
 
 						_calibration[mag_index].ParametersSave();
 
+						_calibration_estimator_bias[mag_index].zero();
+
 						calibration_param_save_needed = true;
 					}
-
 				}
-
-				// clear
-				_mag_cal[i] = {};
 			}
-
-			_calibration_estimator_bias[mag_index].zero();
 		}
 
 		if (calibration_param_save_needed) {
 			param_notify_changes();
 			_last_calibration_update = hrt_absolute_time();
+		}
+
+		// clear all
+		for (int i = 0; i < ORB_MULTI_MAX_INSTANCES; i++) {
+			_mag_cal[i] = {};
 		}
 
 		_in_flight_mag_cal_available = false;
@@ -437,13 +448,6 @@ void VehicleMagnetometer::Run()
 							}
 						}
 
-						// advertise outputs in order if publishing all
-						if (!_param_sens_mag_mode.get()) {
-							for (int instance = 0; instance < uorb_index; instance++) {
-								_vehicle_magnetometer_pub[instance].advertise();
-							}
-						}
-
 						if (_selected_sensor_sub_index < 0) {
 							_sensor_sub[uorb_index].registerCallback();
 						}
@@ -524,6 +528,16 @@ void VehicleMagnetometer::Run()
 						out.timestamp = hrt_absolute_time();
 
 						if (multi_mode) {
+
+							if (!_vehicle_magnetometer_pub[instance].advertised()) {
+								// prefer to maintain vehicle_magneometer instance numbering in sensor order
+								for (int mag_instance = 0; mag_instance < instance; mag_instance++) {
+									if (_calibration[instance].enabled()) {
+										_vehicle_magnetometer_pub[mag_instance].advertise();
+									}
+								}
+							}
+
 							_vehicle_magnetometer_pub[instance].publish(out);
 
 						} else {

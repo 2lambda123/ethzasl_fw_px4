@@ -194,7 +194,10 @@ void TemperatureCompensationModule::Run()
 	perf_begin(_loop_perf);
 
 	// Check if user has requested to run the calibration routine
-	while (_vehicle_command_sub.updated()) {
+	int vehicle_command_updates = 0;
+
+	while (_vehicle_command_sub.updated() && (vehicle_command_updates < vehicle_command_s::ORB_QUEUE_LENGTH)) {
+		vehicle_command_updates++;
 		vehicle_command_s cmd;
 
 		if (_vehicle_command_sub.copy(&cmd)) {
@@ -226,10 +229,10 @@ void TemperatureCompensationModule::Run()
 					vehicle_command_ack_s command_ack{};
 
 					if (ret == 0) {
-						command_ack.result = vehicle_command_s::VEHICLE_CMD_RESULT_ACCEPTED;
+						command_ack.result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
 
 					} else {
-						command_ack.result = vehicle_command_s::VEHICLE_CMD_RESULT_FAILED;
+						command_ack.result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_FAILED;
 					}
 
 					command_ack.timestamp = hrt_absolute_time();

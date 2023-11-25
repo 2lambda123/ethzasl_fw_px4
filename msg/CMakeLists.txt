@@ -59,7 +59,6 @@ set(msg_files
 	cellular_status.msg
 	collision_constraints.msg
 	collision_report.msg
-	commander_state.msg
 	control_allocator_status.msg
 	cpuload.msg
 	differential_pressure.msg
@@ -70,7 +69,7 @@ set(msg_files
 	estimator_aid_source_1d.msg
 	estimator_aid_source_2d.msg
 	estimator_aid_source_3d.msg
-	estimator_baro_bias.msg
+	estimator_bias.msg
 	estimator_event_flags.msg
 	estimator_gps_status.msg
 	estimator_innovations.msg
@@ -81,6 +80,7 @@ set(msg_files
 	estimator_status_flags.msg
 	event.msg
 	failure_detector_status.msg
+	failsafe_flags.msg
 	follow_target.msg
 	follow_target_estimator.msg
 	follow_target_status.msg
@@ -95,6 +95,8 @@ set(msg_files
 	gimbal_manager_status.msg
 	gps_dump.msg
 	gps_inject_data.msg
+	health_report.msg
+	gripper.msg
 	heater_status.msg
 	home_position.msg
 	hover_thrust_estimate.msg
@@ -163,7 +165,6 @@ set(msg_files
 	task_stack_info.msg
 	tecs_status.msg
 	telemetry_status.msg
-	test_motor.msg
 	timesync.msg
 	timesync_status.msg
 	trajectory_bezier.msg
@@ -189,7 +190,6 @@ set(msg_files
 	vehicle_constraints.msg
 	vehicle_control_mode.msg
 	vehicle_global_position.msg
-	vehicle_gps_position.msg
 	vehicle_imu.msg
 	vehicle_imu_status.msg
 	vehicle_land_detected.msg
@@ -202,7 +202,6 @@ set(msg_files
 	vehicle_rates_setpoint.msg
 	vehicle_roi.msg
 	vehicle_status.msg
-	vehicle_status_flags.msg
 	vehicle_thrust_setpoint.msg
 	vehicle_torque_setpoint.msg
 	vehicle_trajectory_bezier.msg

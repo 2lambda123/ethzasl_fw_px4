@@ -32,6 +32,7 @@
  ****************************************************************************/
 
 #include <px4_platform_common/init.h>
+#include <px4_platform_common/log.h>
 #include <px4_platform_common/px4_config.h>
 #include <px4_platform_common/px4_manifest.h>
 #include <px4_platform_common/console_buffer.h>
@@ -121,6 +122,10 @@ int px4_platform_init()
 #endif
 
 	hrt_init();
+
+#if !defined(CONFIG_BUILD_FLAT)
+	hrt_ioctl_init();
+#endif
 
 	param_init();
 
